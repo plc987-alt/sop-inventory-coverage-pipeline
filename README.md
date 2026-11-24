@@ -1,5 +1,7 @@
 # 📦 Pipeline Automatizado de Cobertura de Estoque e Validação de Demanda (S&OP)
 
+Dashboard: https://plc987-alt.github.io/sop-inventory-coverage-pipeline/
+
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-Data_Processing-150458?logo=pandas&logoColor=white)
 ![SQL](https://img.shields.io/badge/SQL-Analytics-orange?logo=postgresql&logoColor=white)
