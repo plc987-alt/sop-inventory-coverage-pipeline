@@ -1,0 +1,201 @@
+sku_id;descricao;categoria;custo_unitario;lead_time_dias
+MAT-10000;Material Elétrico Tipo 1;Postes;4426,15;15
+MAT-10001;Material Elétrico Tipo 2;Medidores;1821,76;15
+MAT-10002;Material Elétrico Tipo 3;Chaves Seccionadoras;3682,2;90
+MAT-10003;Material Elétrico Tipo 4;Medidores;3601,63;45
+MAT-10004;Material Elétrico Tipo 5;Medidores;716,45;45
+MAT-10005;Material Elétrico Tipo 6;Cabos Isolados;2309,03;90
+MAT-10006;Material Elétrico Tipo 7;Chaves Seccionadoras;3144,85;60
+MAT-10007;Material Elétrico Tipo 8;Chaves Seccionadoras;3868,99;45
+MAT-10008;Material Elétrico Tipo 9;Chaves Seccionadoras;1497,15;15
+MAT-10009;Material Elétrico Tipo 10;Medidores;1026,17;15
+MAT-10010;Material Elétrico Tipo 11;Postes;3213,17;30
+MAT-10011;Material Elétrico Tipo 12;Chaves Seccionadoras;3651,33;45
+MAT-10012;Material Elétrico Tipo 13;Medidores;1598,31;60
+MAT-10013;Material Elétrico Tipo 14;Cabos Isolados;473,47;90
+MAT-10014;Material Elétrico Tipo 15;Postes;4235,03;90
+MAT-10015;Material Elétrico Tipo 16;Cabos Isolados;1816,18;60
+MAT-10016;Material Elétrico Tipo 17;Postes;2351,58;30
+MAT-10017;Material Elétrico Tipo 18;Medidores;3777,0;90
+MAT-10018;Material Elétrico Tipo 19;Transformadores;3055,2;45
+MAT-10019;Material Elétrico Tipo 20;Postes;3320,39;30
+MAT-10020;Material Elétrico Tipo 21;Cabos Isolados;976,41;45
+MAT-10021;Material Elétrico Tipo 22;Medidores;2457,15;15
+MAT-10022;Material Elétrico Tipo 23;Postes;3144,72;30
+MAT-10023;Material Elétrico Tipo 24;Transformadores;1063,19;90
+MAT-10024;Material Elétrico Tipo 25;Transformadores;824,42;30
+MAT-10025;Material Elétrico Tipo 26;Chaves Seccionadoras;4420,56;30
+MAT-10026;Material Elétrico Tipo 27;Chaves Seccionadoras;2346,61;30
+MAT-10027;Material Elétrico Tipo 28;Cabos Isolados;1206,99;30
+MAT-10028;Material Elétrico Tipo 29;Postes;4483,31;45
+MAT-10029;Material Elétrico Tipo 30;Postes;4345,94;15
+MAT-10030;Material Elétrico Tipo 31;Chaves Seccionadoras;2532,2;60
+MAT-10031;Material Elétrico Tipo 32;Postes;3977,14;30
+MAT-10032;Material Elétrico Tipo 33;Postes;885,69;90
+MAT-10033;Material Elétrico Tipo 34;Transformadores;1287,37;30
+MAT-10034;Material Elétrico Tipo 35;Chaves Seccionadoras;3165,09;90
+MAT-10035;Material Elétrico Tipo 36;Medidores;3816,88;45
+MAT-10036;Material Elétrico Tipo 37;Chaves Seccionadoras;3859,92;90
+MAT-10037;Material Elétrico Tipo 38;Medidores;1847,08;60
+MAT-10038;Material Elétrico Tipo 39;Transformadores;4000,02;15
+MAT-10039;Material Elétrico Tipo 40;Cabos Isolados;3835,89;90
+MAT-10040;Material Elétrico Tipo 41;Postes;4213,25;90
+MAT-10041;Material Elétrico Tipo 42;Transformadores;3543,69;15
+MAT-10042;Material Elétrico Tipo 43;Postes;3025,34;60
+MAT-10043;Material Elétrico Tipo 44;Cabos Isolados;2631,96;30
+MAT-10044;Material Elétrico Tipo 45;Cabos Isolados;1703,52;90
+MAT-10045;Material Elétrico Tipo 46;Transformadores;4233,29;15
+MAT-10046;Material Elétrico Tipo 47;Cabos Isolados;4382,67;45
+MAT-10047;Material Elétrico Tipo 48;Medidores;1309,87;15
+MAT-10048;Material Elétrico Tipo 49;Cabos Isolados;1405,4;45
+MAT-10049;Material Elétrico Tipo 50;Postes;2208,41;60
+MAT-10050;Material Elétrico Tipo 51;Postes;2042,73;30
+MAT-10051;Material Elétrico Tipo 52;Postes;4475,31;15
+MAT-10052;Material Elétrico Tipo 53;Postes;828,75;90
+MAT-10053;Material Elétrico Tipo 54;Medidores;125,53;60
+MAT-10054;Material Elétrico Tipo 55;Chaves Seccionadoras;2245,3;15
+MAT-10055;Material Elétrico Tipo 56;Transformadores;841,66;90
+MAT-10056;Material Elétrico Tipo 57;Postes;1677,62;15
+MAT-10057;Material Elétrico Tipo 58;Cabos Isolados;3360,28;45
+MAT-10058;Material Elétrico Tipo 59;Postes;3256,79;15
+MAT-10059;Material Elétrico Tipo 60;Cabos Isolados;1417,41;15
+MAT-10060;Material Elétrico Tipo 61;Cabos Isolados;2462,02;15
+MAT-10061;Material Elétrico Tipo 62;Postes;2311,77;60
+MAT-10062;Material Elétrico Tipo 63;Medidores;2879,86;15
+MAT-10063;Material Elétrico Tipo 64;Cabos Isolados;1160,81;90
+MAT-10064;Material Elétrico Tipo 65;Cabos Isolados;2672,87;45
+MAT-10065;Material Elétrico Tipo 66;Postes;4405,97;45
+MAT-10066;Material Elétrico Tipo 67;Cabos Isolados;2213,44;15
+MAT-10067;Material Elétrico Tipo 68;Cabos Isolados;4081,67;60
+MAT-10068;Material Elétrico Tipo 69;Postes;1980,23;60
+MAT-10069;Material Elétrico Tipo 70;Postes;1604,6;90
+MAT-10070;Material Elétrico Tipo 71;Transformadores;2918,94;15
+MAT-10071;Material Elétrico Tipo 72;Medidores;3025,06;45
+MAT-10072;Material Elétrico Tipo 73;Medidores;3894,87;60
+MAT-10073;Material Elétrico Tipo 74;Cabos Isolados;1070,48;15
+MAT-10074;Material Elétrico Tipo 75;Medidores;2268,91;60
+MAT-10075;Material Elétrico Tipo 76;Cabos Isolados;2593,28;60
+MAT-10076;Material Elétrico Tipo 77;Transformadores;3468,91;45
+MAT-10077;Material Elétrico Tipo 78;Postes;239,25;30
+MAT-10078;Material Elétrico Tipo 79;Postes;4475,72;90
+MAT-10079;Material Elétrico Tipo 80;Postes;2138,6;90
+MAT-10080;Material Elétrico Tipo 81;Medidores;1290,44;45
+MAT-10081;Material Elétrico Tipo 82;Transformadores;3980,97;60
+MAT-10082;Material Elétrico Tipo 83;Medidores;3376,09;15
+MAT-10083;Material Elétrico Tipo 84;Medidores;4290,94;60
+MAT-10084;Material Elétrico Tipo 85;Transformadores;1518,49;45
+MAT-10085;Material Elétrico Tipo 86;Transformadores;2507,57;90
+MAT-10086;Material Elétrico Tipo 87;Transformadores;2594,56;60
+MAT-10087;Material Elétrico Tipo 88;Transformadores;4412,38;90
+MAT-10088;Material Elétrico Tipo 89;Postes;380,67;15
+MAT-10089;Material Elétrico Tipo 90;Chaves Seccionadoras;1406,88;90
+MAT-10090;Material Elétrico Tipo 91;Chaves Seccionadoras;895,51;90
+MAT-10091;Material Elétrico Tipo 92;Transformadores;1241,06;30
+MAT-10092;Material Elétrico Tipo 93;Chaves Seccionadoras;2206,92;30
+MAT-10093;Material Elétrico Tipo 94;Chaves Seccionadoras;1705,32;30
+MAT-10094;Material Elétrico Tipo 95;Transformadores;1803,35;90
+MAT-10095;Material Elétrico Tipo 96;Chaves Seccionadoras;3805,97;45
+MAT-10096;Material Elétrico Tipo 97;Medidores;4188,22;90
+MAT-10097;Material Elétrico Tipo 98;Cabos Isolados;358,7;45
+MAT-10098;Material Elétrico Tipo 99;Cabos Isolados;975,73;45
+MAT-10099;Material Elétrico Tipo 100;Transformadores;3034,94;30
+MAT-10100;Material Elétrico Tipo 101;Postes;1642,77;60
+MAT-10101;Material Elétrico Tipo 102;Transformadores;1177,3;15
+MAT-10102;Material Elétrico Tipo 103;Postes;1360,52;30
+MAT-10103;Material Elétrico Tipo 104;Cabos Isolados;1481,96;30
+MAT-10104;Material Elétrico Tipo 105;Transformadores;3825,82;60
+MAT-10105;Material Elétrico Tipo 106;Medidores;653,65;15
+MAT-10106;Material Elétrico Tipo 107;Chaves Seccionadoras;3203,2;90
+MAT-10107;Material Elétrico Tipo 108;Postes;2507,81;90
+MAT-10108;Material Elétrico Tipo 109;Chaves Seccionadoras;1365,95;30
+MAT-10109;Material Elétrico Tipo 110;Chaves Seccionadoras;1915,12;15
+MAT-10110;Material Elétrico Tipo 111;Transformadores;1186,4;30
+MAT-10111;Material Elétrico Tipo 112;Chaves Seccionadoras;2769,29;45
+MAT-10112;Material Elétrico Tipo 113;Medidores;408,5;30
+MAT-10113;Material Elétrico Tipo 114;Chaves Seccionadoras;68,1;30
+MAT-10114;Material Elétrico Tipo 115;Transformadores;2842,27;90
+MAT-10115;Material Elétrico Tipo 116;Medidores;910,49;90
+MAT-10116;Material Elétrico Tipo 117;Cabos Isolados;361,04;90
+MAT-10117;Material Elétrico Tipo 118;Chaves Seccionadoras;1812,67;45
+MAT-10118;Material Elétrico Tipo 119;Transformadores;271,17;90
+MAT-10119;Material Elétrico Tipo 120;Cabos Isolados;3994,88;15
+MAT-10120;Material Elétrico Tipo 121;Cabos Isolados;168,03;60
+MAT-10121;Material Elétrico Tipo 122;Postes;2623,84;15
+MAT-10122;Material Elétrico Tipo 123;Medidores;1998,4;15
+MAT-10123;Material Elétrico Tipo 124;Chaves Seccionadoras;3038,88;90
+MAT-10124;Material Elétrico Tipo 125;Transformadores;1506,92;60
+MAT-10125;Material Elétrico Tipo 126;Postes;735,71;60
+MAT-10126;Material Elétrico Tipo 127;Medidores;4419,1;60
+MAT-10127;Material Elétrico Tipo 128;Postes;3782,45;45
+MAT-10128;Material Elétrico Tipo 129;Medidores;3878,1;90
+MAT-10129;Material Elétrico Tipo 130;Medidores;1159,87;60
+MAT-10130;Material Elétrico Tipo 131;Chaves Seccionadoras;218,01;45
+MAT-10131;Material Elétrico Tipo 132;Medidores;1396,05;30
+MAT-10132;Material Elétrico Tipo 133;Postes;2437,7;30
+MAT-10133;Material Elétrico Tipo 134;Medidores;1500,23;45
+MAT-10134;Material Elétrico Tipo 135;Chaves Seccionadoras;3733,16;45
+MAT-10135;Material Elétrico Tipo 136;Chaves Seccionadoras;1254,72;90
+MAT-10136;Material Elétrico Tipo 137;Postes;4345,2;90
+MAT-10137;Material Elétrico Tipo 138;Cabos Isolados;2082,12;30
+MAT-10138;Material Elétrico Tipo 139;Cabos Isolados;3796,21;60
+MAT-10139;Material Elétrico Tipo 140;Medidores;910,96;30
+MAT-10140;Material Elétrico Tipo 141;Transformadores;1877,58;60
+MAT-10141;Material Elétrico Tipo 142;Medidores;3161,33;60
+MAT-10142;Material Elétrico Tipo 143;Postes;661,36;90
+MAT-10143;Material Elétrico Tipo 144;Postes;636,38;15
+MAT-10144;Material Elétrico Tipo 145;Postes;4364,29;15
+MAT-10145;Material Elétrico Tipo 146;Postes;3228,52;45
+MAT-10146;Material Elétrico Tipo 147;Postes;227,96;90
+MAT-10147;Material Elétrico Tipo 148;Chaves Seccionadoras;1821,75;60
+MAT-10148;Material Elétrico Tipo 149;Cabos Isolados;1976,33;15
+MAT-10149;Material Elétrico Tipo 150;Postes;3359,71;60
+MAT-10150;Material Elétrico Tipo 151;Transformadores;1162,58;15
+MAT-10151;Material Elétrico Tipo 152;Transformadores;866,21;15
+MAT-10152;Material Elétrico Tipo 153;Transformadores;405,29;15
+MAT-10153;Material Elétrico Tipo 154;Transformadores;1953,14;90
+MAT-10154;Material Elétrico Tipo 155;Chaves Seccionadoras;3112,27;30
+MAT-10155;Material Elétrico Tipo 156;Transformadores;304,25;60
+MAT-10156;Material Elétrico Tipo 157;Postes;4122,28;90
+MAT-10157;Material Elétrico Tipo 158;Medidores;2015,68;90
+MAT-10158;Material Elétrico Tipo 159;Transformadores;1113,25;90
+MAT-10159;Material Elétrico Tipo 160;Chaves Seccionadoras;463,21;90
+MAT-10160;Material Elétrico Tipo 161;Chaves Seccionadoras;859,67;90
+MAT-10161;Material Elétrico Tipo 162;Transformadores;4208,71;45
+MAT-10162;Material Elétrico Tipo 163;Medidores;2888,5;60
+MAT-10163;Material Elétrico Tipo 164;Transformadores;2346,88;90
+MAT-10164;Material Elétrico Tipo 165;Chaves Seccionadoras;2972,43;60
+MAT-10165;Material Elétrico Tipo 166;Cabos Isolados;1985,92;45
+MAT-10166;Material Elétrico Tipo 167;Postes;3297,33;45
+MAT-10167;Material Elétrico Tipo 168;Chaves Seccionadoras;257,58;60
+MAT-10168;Material Elétrico Tipo 169;Transformadores;2566,7;15
+MAT-10169;Material Elétrico Tipo 170;Postes;751,77;30
+MAT-10170;Material Elétrico Tipo 171;Transformadores;580,33;15
+MAT-10171;Material Elétrico Tipo 172;Transformadores;1568,07;15
+MAT-10172;Material Elétrico Tipo 173;Cabos Isolados;453,96;15
+MAT-10173;Material Elétrico Tipo 174;Postes;464,47;90
+MAT-10174;Material Elétrico Tipo 175;Postes;1432,35;45
+MAT-10175;Material Elétrico Tipo 176;Cabos Isolados;4408,72;15
+MAT-10176;Material Elétrico Tipo 177;Chaves Seccionadoras;826,1;45
+MAT-10177;Material Elétrico Tipo 178;Transformadores;121,45;60
+MAT-10178;Material Elétrico Tipo 179;Medidores;3445,79;30
+MAT-10179;Material Elétrico Tipo 180;Transformadores;3639,8;60
+MAT-10180;Material Elétrico Tipo 181;Transformadores;1587,79;60
+MAT-10181;Material Elétrico Tipo 182;Chaves Seccionadoras;2115,12;90
+MAT-10182;Material Elétrico Tipo 183;Transformadores;2939,74;30
+MAT-10183;Material Elétrico Tipo 184;Cabos Isolados;259,1;60
+MAT-10184;Material Elétrico Tipo 185;Cabos Isolados;4273,44;60
+MAT-10185;Material Elétrico Tipo 186;Postes;3995,16;30
+MAT-10186;Material Elétrico Tipo 187;Medidores;1207,28;30
+MAT-10187;Material Elétrico Tipo 188;Transformadores;113,18;60
+MAT-10188;Material Elétrico Tipo 189;Transformadores;4203,46;30
+MAT-10189;Material Elétrico Tipo 190;Chaves Seccionadoras;2277,13;60
+MAT-10190;Material Elétrico Tipo 191;Cabos Isolados;2447,93;60
+MAT-10191;Material Elétrico Tipo 192;Medidores;3092,06;90
+MAT-10192;Material Elétrico Tipo 193;Postes;2788,62;15
+MAT-10193;Material Elétrico Tipo 194;Cabos Isolados;4250,04;60
+MAT-10194;Material Elétrico Tipo 195;Postes;4251,64;45
+MAT-10195;Material Elétrico Tipo 196;Chaves Seccionadoras;3908,37;15
+MAT-10196;Material Elétrico Tipo 197;Chaves Seccionadoras;2880,18;15
+MAT-10197;Material Elétrico Tipo 198;Transformadores;3613,23;15
+MAT-10198;Material Elétrico Tipo 199;Medidores;3061,78;90
+MAT-10199;Material Elétrico Tipo 200;Postes;2599,35;60
