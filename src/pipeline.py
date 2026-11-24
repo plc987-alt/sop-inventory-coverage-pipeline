@@ -1,3 +1,4 @@
+from gerar_dashboard import gerar_dashboard_html
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -74,6 +75,7 @@ def executar_pipeline():
 
     print("✅ Pipeline concluído! Resumo executivo:")
     print(df_silver["status_cobertura"].value_counts())
+    gerar_dashboard_html()
 
 if __name__ == "__main__":
     executar_pipeline()

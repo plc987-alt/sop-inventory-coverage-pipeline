@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S&OP Executive Analytics & Demand Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --info: #8b5cf6;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-main); padding-bottom: 40px; }
+        header {
+            background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        header h1 { font-size: 1.35rem; font-weight: 600; color: var(--text-main); }
+        header p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+        .nav-tabs { display: flex; gap: 10px; }
+        .tab-btn {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { border-color: var(--accent); color: var(--text-main); }
+        .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+        .container { max-width: 1400px; margin: 24px auto; padding: 0 24px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Filtros e KPIs */
+        .filters { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+        select, input[type="number"], input[type="range"] {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+        }
+        .kpi-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 1.7rem; font-weight: 700; margin-top: 8px; }
+        .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+
+        /* Grid de Gráficos e Tabelas */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .panel h3 { font-size: 1rem; margin-bottom: 16px; color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-weight: 600; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .b-critico { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .b-atencao { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+        .b-saudavel { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+        .b-excesso { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+
+        /* Mapa */
+        #map { height: 520px; width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+
+        /* Simulador */
+        .sim-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
+        @media (max-width: 960px) { .sim-grid { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+        .form-group label span { color: var(--accent); font-weight: 700; }
+        .form-group input, .form-group select { width: 100%; }
+        .formula-box {
+            background: #0f172a;
+            border-left: 3px solid var(--accent);
+            padding: 12px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>📊 S&OP & Inventory Intelligence Dashboard</h1>
+        <p>Pipeline Automatizado (SAP MM/S4HANA → Python/Parquet → Executive Analytics) | Autor: Peterson de Lima Cardoso</p>
+    </div>
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="openTab('gerencial', this)">1. Visão Gerencial</button>
+        <button class="tab-btn" onclick="openTab('mapa-tab', this)">2. Mapa de Distribuição</button>
+        <button class="tab-btn" onclick="openTab('simulador', this)">3. Simulador Matemático</button>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- ABA 1: GERENCIAL -->
+    <div id="gerencial" class="tab-content active">
+        <div class="filters">
+            <select id="filtroRegional" onchange="atualizarGerencial()">
+                <option value="TODAS">Todas as Regionais (SP & RS)</option>
+            </select>
+            <select id="filtroCategoria" onchange="atualizarGerencial()">
+                <option value="TODAS">Todas as Categorias de Material</option>
+            </select>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Capital Imobilizado</div>
+                <div class="kpi-value" id="kpiValor">R$ 0</div>
+                <div class="kpi-sub">Depósitos Principais (E) + Auxiliares (Y/Z)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Cobertura Média Geral</div>
+                <div class="kpi-value" id="kpiCobertura">0.0 m</div>
+                <div class="kpi-sub">Meta Operacional S&OP: 2.0 meses</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Risco de Ruptura (< 1M)</div>
+                <div class="kpi-value" style="color: var(--danger);" id="kpiCriticos">0</div>
+                <div class="kpi-sub">SKUs exigindo compra emergencial</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Sobre-estoque (> 3M)</div>
+                <div class="kpi-value" style="color: var(--info);" id="kpiExcesso">0</div>
+                <div class="kpi-sub">Oportunidade de remanejamento</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="panel">
+                <h3>Distribuição de SKUs por Status de Cobertura</h3>
+                <canvas id="chartStatus" height="140"></canvas>
+            </div>
+            <div class="panel">
+                <h3>Valor em Estoque por Categoria (R$)</h3>
+                <canvas id="chartCategoria" height="140"></canvas>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Top 12 Itens Mais Críticos (Menor Cobertura vs. Lead-Time)</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Categoria</th>
+                            <th>Regional</th>
+                            <th>Estoque Disp.</th>
+                            <th>CMM (6m)</th>
+                            <th>Lead-Time</th>
+                            <th>Cobertura</th>
+                            <th>Status S&OP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCriticos"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA 2: MAPA INTERATIVO -->
+    <div id="mapa-tab" class="tab-content">
+        <div class="charts-grid" style="grid-template-columns: 2fr 1fr;">
+            <div class="panel">
+                <h3>Distribuição Geográfica de Estoques e Criticidade (SP & RS)</h3>
+                <div id="map"></div>
+            </div>
+            <div class="panel">
+                <h3>Consolidado por Polo Logístico</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Regional</th>
+                            <th>Capital</th>
+                            <th>Cob. Média</th>
+                            <th>Críticos</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaMapa"></tbody>
+                </table>
+                <div class="formula-box">
+                    <strong>Regra de Consolidação Aplicada:</strong><br>
+                    Os saldos dos depósitos satélites e veiculares (<code>Y001</code> e <code>Z001</code>) são agregados automaticamente ao centro principal (<code>E001</code>) de cada regional antes do cálculo de autonomia.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA 3: SIMULADOR MATEMÁTICO -->
+    <div id="simulador" class="tab-content">
+        <div class="sim-grid">
+            <div class="panel">
+                <h3>Parâmetros do Modelo de Reabastecimento</h3>
+                <div class="form-group">
+                    <label>Selecionar SKU da Base SAP:</label>
+                    <select id="simSku" onchange="carregarSkuSimulador()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Consumo Médio Mensal Base (un): <span id="lblCmm">50</span></label>
+                    <input type="number" id="simCmm" value="50" min="1" oninput="rodarSimulacao()">
+                </div>
+                <div class="form-group">
+                    <label>Estoque Atual Disponível (un): <span id="lblEst">80</span></label>
+                    <input type="number" id="simEst" value="80" min="0" oninput="rodarSimulacao()">
+                </div>
+                <div class="form-group">
+                    <label>Meta de Cobertura Desejada (meses): <span id="lblMeta">2.0 m</span></label>
+                    <input type="range" id="simMeta" min="0.5" max="6.0" step="0.5" value="2.0" oninput="rodarSimulacao()">
+                </div>
+                <div class="form-group">
+                    <label>Lead-Time de Fornecimento (dias): <span id="lblLt">45 dias</span></label>
+                    <input type="range" id="simLt" min="5" max="150" step="5" value="45" oninput="rodarSimulacao()">
+                </div>
+                <div class="form-group">
+                    <label>Variação Projetada de Demanda (%): <span id="lblVar">+10%</span></label>
+                    <input type="range" id="simVar" min="-40" max="100" step="5" value="10" oninput="rodarSimulacao()">
+                </div>
+                <div class="form-group">
+                    <label>Nível de Serviço Desejado (Fator Z):</label>
+                    <select id="simZ" onchange="rodarSimulacao()">
+                        <option value="1.28">90% (Z = 1.28 - Baixa Criticidade)</option>
+                        <option value="1.65" selected>95% (Z = 1.65 - Padrão Operacional)</option>
+                        <option value="2.33">99% (Z = 2.33 - Infraestrutura Crítica)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-title">Estoque de Segurança (ES)</div>
+                        <div class="kpi-value" id="resEs">0 un</div>
+                        <div class="kpi-sub">Buffer contra variabilidade e lead-time</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Ponto de Pedido (ROP)</div>
+                        <div class="kpi-value" style="color: var(--warning);" id="resRop">0 un</div>
+                        <div class="kpi-sub">Gatilho mínimo para emissão de RC/PO</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Necessidade Líquida Compra</div>
+                        <div class="kpi-value" style="color: var(--accent);" id="resCompra">0 un</div>
+                        <div class="kpi-sub" id="resCustoCompra">Investimento estimado: R$ 0</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Projeção de Saldo e Ponto de Ruptura (Horizonte 6 Meses)</h3>
+                    <canvas id="chartSimulador" height="125"></canvas>
+                    <div class="formula-box" id="diagnosticoSim"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const rawData = [{"sku_id":"MAT-10000","regional":"Santa Maria","estoque_livre_total":116,"estoque_transito_total":47,"saldo_auxiliar":25,"estoque_disponivel_geral":163,"descricao":"Material Elétrico Tipo 1","categoria":"Postes","custo_unitario":4426.15,"lead_time_dias":15,"cmm_6m":60.5,"cobertura_meses":2.69,"valor_estoque_total":721462.45,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10001","regional":"Santos","estoque_livre_total":27,"estoque_transito_total":17,"saldo_auxiliar":22,"estoque_disponivel_geral":44,"descricao":"Material Elétrico Tipo 2","categoria":"Medidores","custo_unitario":1821.76,"lead_time_dias":15,"cmm_6m":45.83,"cobertura_meses":0.96,"valor_estoque_total":80157.44,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10002","regional":"Campinas","estoque_livre_total":105,"estoque_transito_total":9,"saldo_auxiliar":40,"estoque_disponivel_geral":114,"descricao":"Material Elétrico Tipo 3","categoria":"Chaves Seccionadoras","custo_unitario":3682.2,"lead_time_dias":90,"cmm_6m":52.67,"cobertura_meses":2.16,"valor_estoque_total":419770.8,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10003","regional":"Santos","estoque_livre_total":153,"estoque_transito_total":4,"saldo_auxiliar":45,"estoque_disponivel_geral":157,"descricao":"Material Elétrico Tipo 4","categoria":"Medidores","custo_unitario":3601.63,"lead_time_dias":45,"cmm_6m":50.5,"cobertura_meses":3.11,"valor_estoque_total":565455.91,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10004","regional":"Campinas","estoque_livre_total":148,"estoque_transito_total":0,"saldo_auxiliar":31,"estoque_disponivel_geral":148,"descricao":"Material Elétrico Tipo 5","categoria":"Medidores","custo_unitario":716.45,"lead_time_dias":45,"cmm_6m":44.33,"cobertura_meses":3.34,"valor_estoque_total":106034.6,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10005","regional":"Campinas","estoque_livre_total":55,"estoque_transito_total":20,"saldo_auxiliar":45,"estoque_disponivel_geral":75,"descricao":"Material Elétrico Tipo 6","categoria":"Cabos Isolados","custo_unitario":2309.03,"lead_time_dias":90,"cmm_6m":69.83,"cobertura_meses":1.07,"valor_estoque_total":173177.25,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10006","regional":"Santos","estoque_livre_total":38,"estoque_transito_total":48,"saldo_auxiliar":12,"estoque_disponivel_geral":86,"descricao":"Material Elétrico Tipo 7","categoria":"Chaves Seccionadoras","custo_unitario":3144.85,"lead_time_dias":60,"cmm_6m":41.83,"cobertura_meses":2.06,"valor_estoque_total":270457.1,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10007","regional":"Ribeirão Preto","estoque_livre_total":124,"estoque_transito_total":34,"saldo_auxiliar":20,"estoque_disponivel_geral":158,"descricao":"Material Elétrico Tipo 8","categoria":"Chaves Seccionadoras","custo_unitario":3868.99,"lead_time_dias":45,"cmm_6m":64.5,"cobertura_meses":2.45,"valor_estoque_total":611300.42,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10008","regional":"Caxias do Sul","estoque_livre_total":89,"estoque_transito_total":4,"saldo_auxiliar":9,"estoque_disponivel_geral":93,"descricao":"Material Elétrico Tipo 9","categoria":"Chaves Seccionadoras","custo_unitario":1497.15,"lead_time_dias":15,"cmm_6m":30.83,"cobertura_meses":3.02,"valor_estoque_total":139234.95,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10009","regional":"Santos","estoque_livre_total":76,"estoque_transito_total":22,"saldo_auxiliar":24,"estoque_disponivel_geral":98,"descricao":"Material Elétrico Tipo 10","categoria":"Medidores","custo_unitario":1026.17,"lead_time_dias":15,"cmm_6m":48.17,"cobertura_meses":2.03,"valor_estoque_total":100564.66,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10010","regional":"Santa Maria","estoque_livre_total":107,"estoque_transito_total":9,"saldo_auxiliar":34,"estoque_disponivel_geral":116,"descricao":"Material Elétrico Tipo 11","categoria":"Postes","custo_unitario":3213.17,"lead_time_dias":30,"cmm_6m":11.5,"cobertura_meses":10.09,"valor_estoque_total":372727.72,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10011","regional":"Santa Maria","estoque_livre_total":90,"estoque_transito_total":8,"saldo_auxiliar":13,"estoque_disponivel_geral":98,"descricao":"Material Elétrico Tipo 12","categoria":"Chaves Seccionadoras","custo_unitario":3651.33,"lead_time_dias":45,"cmm_6m":16.67,"cobertura_meses":5.88,"valor_estoque_total":357830.34,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10012","regional":"Santos","estoque_livre_total":47,"estoque_transito_total":12,"saldo_auxiliar":3,"estoque_disponivel_geral":59,"descricao":"Material Elétrico Tipo 13","categoria":"Medidores","custo_unitario":1598.31,"lead_time_dias":60,"cmm_6m":44.17,"cobertura_meses":1.34,"valor_estoque_total":94300.29,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10013","regional":"Campinas","estoque_livre_total":111,"estoque_transito_total":31,"saldo_auxiliar":8,"estoque_disponivel_geral":142,"descricao":"Material Elétrico Tipo 14","categoria":"Cabos Isolados","custo_unitario":473.47,"lead_time_dias":90,"cmm_6m":76.0,"cobertura_meses":1.87,"valor_estoque_total":67232.74,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10014","regional":"Ribeirão Preto","estoque_livre_total":56,"estoque_transito_total":53,"saldo_auxiliar":23,"estoque_disponivel_geral":109,"descricao":"Material Elétrico Tipo 15","categoria":"Postes","custo_unitario":4235.03,"lead_time_dias":90,"cmm_6m":13.5,"cobertura_meses":8.07,"valor_estoque_total":461618.27,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10015","regional":"Santos","estoque_livre_total":70,"estoque_transito_total":11,"saldo_auxiliar":21,"estoque_disponivel_geral":81,"descricao":"Material Elétrico Tipo 16","categoria":"Cabos Isolados","custo_unitario":1816.18,"lead_time_dias":60,"cmm_6m":59.0,"cobertura_meses":1.37,"valor_estoque_total":147110.58,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10016","regional":"Caxias do Sul","estoque_livre_total":44,"estoque_transito_total":29,"saldo_auxiliar":40,"estoque_disponivel_geral":73,"descricao":"Material Elétrico Tipo 17","categoria":"Postes","custo_unitario":2351.58,"lead_time_dias":30,"cmm_6m":64.33,"cobertura_meses":1.13,"valor_estoque_total":171665.34,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10017","regional":"Santa Maria","estoque_livre_total":95,"estoque_transito_total":13,"saldo_auxiliar":11,"estoque_disponivel_geral":108,"descricao":"Material Elétrico Tipo 18","categoria":"Medidores","custo_unitario":3777.0,"lead_time_dias":90,"cmm_6m":47.17,"cobertura_meses":2.29,"valor_estoque_total":407916.0,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10018","regional":"Santos","estoque_livre_total":108,"estoque_transito_total":37,"saldo_auxiliar":6,"estoque_disponivel_geral":145,"descricao":"Material Elétrico Tipo 19","categoria":"Transformadores","custo_unitario":3055.2,"lead_time_dias":45,"cmm_6m":37.0,"cobertura_meses":3.92,"valor_estoque_total":443004.0,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10019","regional":"Ribeirão Preto","estoque_livre_total":129,"estoque_transito_total":17,"saldo_auxiliar":32,"estoque_disponivel_geral":146,"descricao":"Material Elétrico Tipo 20","categoria":"Postes","custo_unitario":3320.39,"lead_time_dias":30,"cmm_6m":10.67,"cobertura_meses":13.68,"valor_estoque_total":484776.94,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10020","regional":"Ribeirão Preto","estoque_livre_total":56,"estoque_transito_total":56,"saldo_auxiliar":5,"estoque_disponivel_geral":112,"descricao":"Material Elétrico Tipo 21","categoria":"Cabos Isolados","custo_unitario":976.41,"lead_time_dias":45,"cmm_6m":22.83,"cobertura_meses":4.91,"valor_estoque_total":109357.92,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10021","regional":"Caxias do Sul","estoque_livre_total":56,"estoque_transito_total":54,"saldo_auxiliar":27,"estoque_disponivel_geral":110,"descricao":"Material Elétrico Tipo 22","categoria":"Medidores","custo_unitario":2457.15,"lead_time_dias":15,"cmm_6m":42.0,"cobertura_meses":2.62,"valor_estoque_total":270286.5,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10022","regional":"Campinas","estoque_livre_total":16,"estoque_transito_total":28,"saldo_auxiliar":12,"estoque_disponivel_geral":44,"descricao":"Material Elétrico Tipo 23","categoria":"Postes","custo_unitario":3144.72,"lead_time_dias":30,"cmm_6m":51.5,"cobertura_meses":0.85,"valor_estoque_total":138367.68,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10023","regional":"Campinas","estoque_livre_total":115,"estoque_transito_total":16,"saldo_auxiliar":42,"estoque_disponivel_geral":131,"descricao":"Material Elétrico Tipo 24","categoria":"Transformadores","custo_unitario":1063.19,"lead_time_dias":90,"cmm_6m":68.33,"cobertura_meses":1.92,"valor_estoque_total":139277.89,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10024","regional":"Santa Maria","estoque_livre_total":54,"estoque_transito_total":5,"saldo_auxiliar":21,"estoque_disponivel_geral":59,"descricao":"Material Elétrico Tipo 25","categoria":"Transformadores","custo_unitario":824.42,"lead_time_dias":30,"cmm_6m":14.83,"cobertura_meses":3.98,"valor_estoque_total":48640.78,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10025","regional":"Santa Maria","estoque_livre_total":131,"estoque_transito_total":42,"saldo_auxiliar":25,"estoque_disponivel_geral":173,"descricao":"Material Elétrico Tipo 26","categoria":"Chaves Seccionadoras","custo_unitario":4420.56,"lead_time_dias":30,"cmm_6m":86.33,"cobertura_meses":2.0,"valor_estoque_total":764756.88,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10026","regional":"Santos","estoque_livre_total":154,"estoque_transito_total":56,"saldo_auxiliar":44,"estoque_disponivel_geral":210,"descricao":"Material Elétrico Tipo 27","categoria":"Chaves Seccionadoras","custo_unitario":2346.61,"lead_time_dias":30,"cmm_6m":42.67,"cobertura_meses":4.92,"valor_estoque_total":492788.1,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10027","regional":"Santos","estoque_livre_total":127,"estoque_transito_total":15,"saldo_auxiliar":10,"estoque_disponivel_geral":142,"descricao":"Material Elétrico Tipo 28","categoria":"Cabos Isolados","custo_unitario":1206.99,"lead_time_dias":30,"cmm_6m":22.5,"cobertura_meses":6.31,"valor_estoque_total":171392.58,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10028","regional":"Caxias do Sul","estoque_livre_total":59,"estoque_transito_total":24,"saldo_auxiliar":4,"estoque_disponivel_geral":83,"descricao":"Material Elétrico Tipo 29","categoria":"Postes","custo_unitario":4483.31,"lead_time_dias":45,"cmm_6m":75.17,"cobertura_meses":1.1,"valor_estoque_total":372114.73,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10029","regional":"Santos","estoque_livre_total":127,"estoque_transito_total":31,"saldo_auxiliar":35,"estoque_disponivel_geral":158,"descricao":"Material Elétrico Tipo 30","categoria":"Postes","custo_unitario":4345.94,"lead_time_dias":15,"cmm_6m":59.0,"cobertura_meses":2.68,"valor_estoque_total":686658.52,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10030","regional":"Santos","estoque_livre_total":46,"estoque_transito_total":4,"saldo_auxiliar":26,"estoque_disponivel_geral":50,"descricao":"Material Elétrico Tipo 31","categoria":"Chaves Seccionadoras","custo_unitario":2532.2,"lead_time_dias":60,"cmm_6m":22.67,"cobertura_meses":2.21,"valor_estoque_total":126610.0,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10031","regional":"Santa Maria","estoque_livre_total":26,"estoque_transito_total":20,"saldo_auxiliar":5,"estoque_disponivel_geral":46,"descricao":"Material Elétrico Tipo 32","categoria":"Postes","custo_unitario":3977.14,"lead_time_dias":30,"cmm_6m":12.17,"cobertura_meses":3.78,"valor_estoque_total":182948.44,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10032","regional":"Santa Maria","estoque_livre_total":118,"estoque_transito_total":11,"saldo_auxiliar":14,"estoque_disponivel_geral":129,"descricao":"Material Elétrico Tipo 33","categoria":"Postes","custo_unitario":885.69,"lead_time_dias":90,"cmm_6m":65.33,"cobertura_meses":1.97,"valor_estoque_total":114254.01,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10033","regional":"Campinas","estoque_livre_total":97,"estoque_transito_total":25,"saldo_auxiliar":20,"estoque_disponivel_geral":122,"descricao":"Material Elétrico Tipo 34","categoria":"Transformadores","custo_unitario":1287.37,"lead_time_dias":30,"cmm_6m":31.83,"cobertura_meses":3.83,"valor_estoque_total":157059.14,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10034","regional":"Ribeirão Preto","estoque_livre_total":81,"estoque_transito_total":56,"saldo_auxiliar":35,"estoque_disponivel_geral":137,"descricao":"Material Elétrico Tipo 35","categoria":"Chaves Seccionadoras","custo_unitario":3165.09,"lead_time_dias":90,"cmm_6m":41.83,"cobertura_meses":3.28,"valor_estoque_total":433617.33,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10035","regional":"Santos","estoque_livre_total":81,"estoque_transito_total":47,"saldo_auxiliar":19,"estoque_disponivel_geral":128,"descricao":"Material Elétrico Tipo 36","categoria":"Medidores","custo_unitario":3816.88,"lead_time_dias":45,"cmm_6m":23.83,"cobertura_meses":5.37,"valor_estoque_total":488560.64,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10036","regional":"Campinas","estoque_livre_total":28,"estoque_transito_total":48,"saldo_auxiliar":21,"estoque_disponivel_geral":76,"descricao":"Material Elétrico Tipo 37","categoria":"Chaves Seccionadoras","custo_unitario":3859.92,"lead_time_dias":90,"cmm_6m":46.5,"cobertura_meses":1.63,"valor_estoque_total":293353.92,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10037","regional":"Ribeirão Preto","estoque_livre_total":63,"estoque_transito_total":22,"saldo_auxiliar":36,"estoque_disponivel_geral":85,"descricao":"Material Elétrico Tipo 38","categoria":"Medidores","custo_unitario":1847.08,"lead_time_dias":60,"cmm_6m":53.83,"cobertura_meses":1.58,"valor_estoque_total":157001.8,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10038","regional":"Ribeirão Preto","estoque_livre_total":144,"estoque_transito_total":25,"saldo_auxiliar":36,"estoque_disponivel_geral":169,"descricao":"Material Elétrico Tipo 39","categoria":"Transformadores","custo_unitario":4000.02,"lead_time_dias":15,"cmm_6m":41.5,"cobertura_meses":4.07,"valor_estoque_total":676003.38,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10039","regional":"Santos","estoque_livre_total":42,"estoque_transito_total":2,"saldo_auxiliar":36,"estoque_disponivel_geral":44,"descricao":"Material Elétrico Tipo 40","categoria":"Cabos Isolados","custo_unitario":3835.89,"lead_time_dias":90,"cmm_6m":13.83,"cobertura_meses":3.18,"valor_estoque_total":168779.16,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10040","regional":"Santos","estoque_livre_total":139,"estoque_transito_total":59,"saldo_auxiliar":29,"estoque_disponivel_geral":198,"descricao":"Material Elétrico Tipo 41","categoria":"Postes","custo_unitario":4213.25,"lead_time_dias":90,"cmm_6m":46.67,"cobertura_meses":4.24,"valor_estoque_total":834223.5,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10041","regional":"Ribeirão Preto","estoque_livre_total":69,"estoque_transito_total":34,"saldo_auxiliar":32,"estoque_disponivel_geral":103,"descricao":"Material Elétrico Tipo 42","categoria":"Transformadores","custo_unitario":3543.69,"lead_time_dias":15,"cmm_6m":52.33,"cobertura_meses":1.97,"valor_estoque_total":365000.07,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10042","regional":"Campinas","estoque_livre_total":133,"estoque_transito_total":36,"saldo_auxiliar":15,"estoque_disponivel_geral":169,"descricao":"Material Elétrico Tipo 43","categoria":"Postes","custo_unitario":3025.34,"lead_time_dias":60,"cmm_6m":25.17,"cobertura_meses":6.71,"valor_estoque_total":511282.46,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10043","regional":"Campinas","estoque_livre_total":48,"estoque_transito_total":38,"saldo_auxiliar":32,"estoque_disponivel_geral":86,"descricao":"Material Elétrico Tipo 44","categoria":"Cabos Isolados","custo_unitario":2631.96,"lead_time_dias":30,"cmm_6m":58.5,"cobertura_meses":1.47,"valor_estoque_total":226348.56,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10044","regional":"Campinas","estoque_livre_total":59,"estoque_transito_total":12,"saldo_auxiliar":43,"estoque_disponivel_geral":71,"descricao":"Material Elétrico Tipo 45","categoria":"Cabos Isolados","custo_unitario":1703.52,"lead_time_dias":90,"cmm_6m":20.5,"cobertura_meses":3.46,"valor_estoque_total":120949.92,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10045","regional":"Caxias do Sul","estoque_livre_total":29,"estoque_transito_total":2,"saldo_auxiliar":20,"estoque_disponivel_geral":31,"descricao":"Material Elétrico Tipo 46","categoria":"Transformadores","custo_unitario":4233.29,"lead_time_dias":15,"cmm_6m":20.5,"cobertura_meses":1.51,"valor_estoque_total":131231.99,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10046","regional":"Ribeirão Preto","estoque_livre_total":145,"estoque_transito_total":35,"saldo_auxiliar":35,"estoque_disponivel_geral":180,"descricao":"Material Elétrico Tipo 47","categoria":"Cabos Isolados","custo_unitario":4382.67,"lead_time_dias":45,"cmm_6m":46.83,"cobertura_meses":3.84,"valor_estoque_total":788880.6,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10047","regional":"Ribeirão Preto","estoque_livre_total":133,"estoque_transito_total":7,"saldo_auxiliar":23,"estoque_disponivel_geral":140,"descricao":"Material Elétrico Tipo 48","categoria":"Medidores","custo_unitario":1309.87,"lead_time_dias":15,"cmm_6m":23.33,"cobertura_meses":6.0,"valor_estoque_total":183381.8,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10048","regional":"Caxias do Sul","estoque_livre_total":94,"estoque_transito_total":41,"saldo_auxiliar":12,"estoque_disponivel_geral":135,"descricao":"Material Elétrico Tipo 49","categoria":"Cabos Isolados","custo_unitario":1405.4,"lead_time_dias":45,"cmm_6m":60.83,"cobertura_meses":2.22,"valor_estoque_total":189729.0,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10049","regional":"Caxias do Sul","estoque_livre_total":60,"estoque_transito_total":33,"saldo_auxiliar":35,"estoque_disponivel_geral":93,"descricao":"Material Elétrico Tipo 50","categoria":"Postes","custo_unitario":2208.41,"lead_time_dias":60,"cmm_6m":63.83,"cobertura_meses":1.46,"valor_estoque_total":205382.13,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10050","regional":"Santa Maria","estoque_livre_total":73,"estoque_transito_total":52,"saldo_auxiliar":41,"estoque_disponivel_geral":125,"descricao":"Material Elétrico Tipo 51","categoria":"Postes","custo_unitario":2042.73,"lead_time_dias":30,"cmm_6m":30.0,"cobertura_meses":4.17,"valor_estoque_total":255341.25,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10051","regional":"Caxias do Sul","estoque_livre_total":138,"estoque_transito_total":10,"saldo_auxiliar":45,"estoque_disponivel_geral":148,"descricao":"Material Elétrico Tipo 52","categoria":"Postes","custo_unitario":4475.31,"lead_time_dias":15,"cmm_6m":61.33,"cobertura_meses":2.41,"valor_estoque_total":662345.88,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10052","regional":"Campinas","estoque_livre_total":143,"estoque_transito_total":2,"saldo_auxiliar":25,"estoque_disponivel_geral":145,"descricao":"Material Elétrico Tipo 53","categoria":"Postes","custo_unitario":828.75,"lead_time_dias":90,"cmm_6m":70.0,"cobertura_meses":2.07,"valor_estoque_total":120168.75,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10053","regional":"Santa Maria","estoque_livre_total":41,"estoque_transito_total":23,"saldo_auxiliar":6,"estoque_disponivel_geral":64,"descricao":"Material Elétrico Tipo 54","categoria":"Medidores","custo_unitario":125.53,"lead_time_dias":60,"cmm_6m":55.33,"cobertura_meses":1.16,"valor_estoque_total":8033.92,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10054","regional":"Caxias do Sul","estoque_livre_total":108,"estoque_transito_total":10,"saldo_auxiliar":17,"estoque_disponivel_geral":118,"descricao":"Material Elétrico Tipo 55","categoria":"Chaves Seccionadoras","custo_unitario":2245.3,"lead_time_dias":15,"cmm_6m":25.17,"cobertura_meses":4.69,"valor_estoque_total":264945.4,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10055","regional":"Campinas","estoque_livre_total":116,"estoque_transito_total":55,"saldo_auxiliar":23,"estoque_disponivel_geral":171,"descricao":"Material Elétrico Tipo 56","categoria":"Transformadores","custo_unitario":841.66,"lead_time_dias":90,"cmm_6m":60.0,"cobertura_meses":2.85,"valor_estoque_total":143923.86,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10056","regional":"Campinas","estoque_livre_total":82,"estoque_transito_total":14,"saldo_auxiliar":17,"estoque_disponivel_geral":96,"descricao":"Material Elétrico Tipo 57","categoria":"Postes","custo_unitario":1677.62,"lead_time_dias":15,"cmm_6m":16.17,"cobertura_meses":5.94,"valor_estoque_total":161051.52,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10057","regional":"Ribeirão Preto","estoque_livre_total":65,"estoque_transito_total":44,"saldo_auxiliar":15,"estoque_disponivel_geral":109,"descricao":"Material Elétrico Tipo 58","categoria":"Cabos Isolados","custo_unitario":3360.28,"lead_time_dias":45,"cmm_6m":34.67,"cobertura_meses":3.14,"valor_estoque_total":366270.52,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10058","regional":"Ribeirão Preto","estoque_livre_total":154,"estoque_transito_total":3,"saldo_auxiliar":37,"estoque_disponivel_geral":157,"descricao":"Material Elétrico Tipo 59","categoria":"Postes","custo_unitario":3256.79,"lead_time_dias":15,"cmm_6m":68.83,"cobertura_meses":2.28,"valor_estoque_total":511316.03,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10059","regional":"Campinas","estoque_livre_total":44,"estoque_transito_total":48,"saldo_auxiliar":25,"estoque_disponivel_geral":92,"descricao":"Material Elétrico Tipo 60","categoria":"Cabos Isolados","custo_unitario":1417.41,"lead_time_dias":15,"cmm_6m":55.17,"cobertura_meses":1.67,"valor_estoque_total":130401.72,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10060","regional":"Campinas","estoque_livre_total":98,"estoque_transito_total":13,"saldo_auxiliar":9,"estoque_disponivel_geral":111,"descricao":"Material Elétrico Tipo 61","categoria":"Cabos Isolados","custo_unitario":2462.02,"lead_time_dias":15,"cmm_6m":78.17,"cobertura_meses":1.42,"valor_estoque_total":273284.22,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10061","regional":"Santos","estoque_livre_total":111,"estoque_transito_total":12,"saldo_auxiliar":12,"estoque_disponivel_geral":123,"descricao":"Material Elétrico Tipo 62","categoria":"Postes","custo_unitario":2311.77,"lead_time_dias":60,"cmm_6m":11.83,"cobertura_meses":10.4,"valor_estoque_total":284347.71,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10062","regional":"Campinas","estoque_livre_total":37,"estoque_transito_total":49,"saldo_auxiliar":32,"estoque_disponivel_geral":86,"descricao":"Material Elétrico Tipo 63","categoria":"Medidores","custo_unitario":2879.86,"lead_time_dias":15,"cmm_6m":29.33,"cobertura_meses":2.93,"valor_estoque_total":247667.96,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10063","regional":"Santa Maria","estoque_livre_total":34,"estoque_transito_total":9,"saldo_auxiliar":12,"estoque_disponivel_geral":43,"descricao":"Material Elétrico Tipo 64","categoria":"Cabos Isolados","custo_unitario":1160.81,"lead_time_dias":90,"cmm_6m":62.0,"cobertura_meses":0.69,"valor_estoque_total":49914.83,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10064","regional":"Santa Maria","estoque_livre_total":58,"estoque_transito_total":1,"saldo_auxiliar":19,"estoque_disponivel_geral":59,"descricao":"Material Elétrico Tipo 65","categoria":"Cabos Isolados","custo_unitario":2672.87,"lead_time_dias":45,"cmm_6m":21.33,"cobertura_meses":2.77,"valor_estoque_total":157699.33,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10065","regional":"Santa Maria","estoque_livre_total":90,"estoque_transito_total":16,"saldo_auxiliar":18,"estoque_disponivel_geral":106,"descricao":"Material Elétrico Tipo 66","categoria":"Postes","custo_unitario":4405.97,"lead_time_dias":45,"cmm_6m":59.0,"cobertura_meses":1.8,"valor_estoque_total":467032.82,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10066","regional":"Santos","estoque_livre_total":113,"estoque_transito_total":30,"saldo_auxiliar":20,"estoque_disponivel_geral":143,"descricao":"Material Elétrico Tipo 67","categoria":"Cabos Isolados","custo_unitario":2213.44,"lead_time_dias":15,"cmm_6m":43.5,"cobertura_meses":3.29,"valor_estoque_total":316521.92,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10067","regional":"Caxias do Sul","estoque_livre_total":140,"estoque_transito_total":49,"saldo_auxiliar":33,"estoque_disponivel_geral":189,"descricao":"Material Elétrico Tipo 68","categoria":"Cabos Isolados","custo_unitario":4081.67,"lead_time_dias":60,"cmm_6m":14.67,"cobertura_meses":12.88,"valor_estoque_total":771435.63,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10068","regional":"Santos","estoque_livre_total":21,"estoque_transito_total":33,"saldo_auxiliar":13,"estoque_disponivel_geral":54,"descricao":"Material Elétrico Tipo 69","categoria":"Postes","custo_unitario":1980.23,"lead_time_dias":60,"cmm_6m":71.17,"cobertura_meses":0.76,"valor_estoque_total":106932.42,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10069","regional":"Santos","estoque_livre_total":28,"estoque_transito_total":39,"saldo_auxiliar":28,"estoque_disponivel_geral":67,"descricao":"Material Elétrico Tipo 70","categoria":"Postes","custo_unitario":1604.6,"lead_time_dias":90,"cmm_6m":22.33,"cobertura_meses":3.0,"valor_estoque_total":107508.2,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10070","regional":"Santos","estoque_livre_total":119,"estoque_transito_total":36,"saldo_auxiliar":15,"estoque_disponivel_geral":155,"descricao":"Material Elétrico Tipo 71","categoria":"Transformadores","custo_unitario":2918.94,"lead_time_dias":15,"cmm_6m":79.67,"cobertura_meses":1.95,"valor_estoque_total":452435.7,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10071","regional":"Santa Maria","estoque_livre_total":67,"estoque_transito_total":4,"saldo_auxiliar":31,"estoque_disponivel_geral":71,"descricao":"Material Elétrico Tipo 72","categoria":"Medidores","custo_unitario":3025.06,"lead_time_dias":45,"cmm_6m":73.17,"cobertura_meses":0.97,"valor_estoque_total":214779.26,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10072","regional":"Ribeirão Preto","estoque_livre_total":97,"estoque_transito_total":3,"saldo_auxiliar":36,"estoque_disponivel_geral":100,"descricao":"Material Elétrico Tipo 73","categoria":"Medidores","custo_unitario":3894.87,"lead_time_dias":60,"cmm_6m":66.17,"cobertura_meses":1.51,"valor_estoque_total":389487.0,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10073","regional":"Ribeirão Preto","estoque_livre_total":102,"estoque_transito_total":17,"saldo_auxiliar":14,"estoque_disponivel_geral":119,"descricao":"Material Elétrico Tipo 74","categoria":"Cabos Isolados","custo_unitario":1070.48,"lead_time_dias":15,"cmm_6m":49.83,"cobertura_meses":2.39,"valor_estoque_total":127387.12,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10074","regional":"Santos","estoque_livre_total":73,"estoque_transito_total":32,"saldo_auxiliar":36,"estoque_disponivel_geral":105,"descricao":"Material Elétrico Tipo 75","categoria":"Medidores","custo_unitario":2268.91,"lead_time_dias":60,"cmm_6m":27.83,"cobertura_meses":3.77,"valor_estoque_total":238235.55,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10075","regional":"Campinas","estoque_livre_total":38,"estoque_transito_total":16,"saldo_auxiliar":14,"estoque_disponivel_geral":54,"descricao":"Material Elétrico Tipo 76","categoria":"Cabos Isolados","custo_unitario":2593.28,"lead_time_dias":60,"cmm_6m":70.67,"cobertura_meses":0.76,"valor_estoque_total":140037.12,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10076","regional":"Ribeirão Preto","estoque_livre_total":91,"estoque_transito_total":52,"saldo_auxiliar":14,"estoque_disponivel_geral":143,"descricao":"Material Elétrico Tipo 77","categoria":"Transformadores","custo_unitario":3468.91,"lead_time_dias":45,"cmm_6m":13.83,"cobertura_meses":10.34,"valor_estoque_total":496054.13,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10077","regional":"Santos","estoque_livre_total":48,"estoque_transito_total":50,"saldo_auxiliar":10,"estoque_disponivel_geral":98,"descricao":"Material Elétrico Tipo 78","categoria":"Postes","custo_unitario":239.25,"lead_time_dias":30,"cmm_6m":70.67,"cobertura_meses":1.39,"valor_estoque_total":23446.5,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10078","regional":"Santos","estoque_livre_total":22,"estoque_transito_total":50,"saldo_auxiliar":16,"estoque_disponivel_geral":72,"descricao":"Material Elétrico Tipo 79","categoria":"Postes","custo_unitario":4475.72,"lead_time_dias":90,"cmm_6m":70.17,"cobertura_meses":1.03,"valor_estoque_total":322251.84,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10079","regional":"Caxias do Sul","estoque_livre_total":33,"estoque_transito_total":46,"saldo_auxiliar":19,"estoque_disponivel_geral":79,"descricao":"Material Elétrico Tipo 80","categoria":"Postes","custo_unitario":2138.6,"lead_time_dias":90,"cmm_6m":46.33,"cobertura_meses":1.71,"valor_estoque_total":168949.4,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10080","regional":"Santos","estoque_livre_total":64,"estoque_transito_total":28,"saldo_auxiliar":29,"estoque_disponivel_geral":92,"descricao":"Material Elétrico Tipo 81","categoria":"Medidores","custo_unitario":1290.44,"lead_time_dias":45,"cmm_6m":24.0,"cobertura_meses":3.83,"valor_estoque_total":118720.48,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10081","regional":"Campinas","estoque_livre_total":122,"estoque_transito_total":26,"saldo_auxiliar":22,"estoque_disponivel_geral":148,"descricao":"Material Elétrico Tipo 82","categoria":"Transformadores","custo_unitario":3980.97,"lead_time_dias":60,"cmm_6m":26.83,"cobertura_meses":5.52,"valor_estoque_total":589183.5600000001,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10082","regional":"Caxias do Sul","estoque_livre_total":98,"estoque_transito_total":1,"saldo_auxiliar":13,"estoque_disponivel_geral":99,"descricao":"Material Elétrico Tipo 83","categoria":"Medidores","custo_unitario":3376.09,"lead_time_dias":15,"cmm_6m":29.33,"cobertura_meses":3.38,"valor_estoque_total":334232.91,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10083","regional":"Santos","estoque_livre_total":99,"estoque_transito_total":32,"saldo_auxiliar":26,"estoque_disponivel_geral":131,"descricao":"Material Elétrico Tipo 84","categoria":"Medidores","custo_unitario":4290.94,"lead_time_dias":60,"cmm_6m":34.67,"cobertura_meses":3.78,"valor_estoque_total":562113.14,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10084","regional":"Santa Maria","estoque_livre_total":45,"estoque_transito_total":46,"saldo_auxiliar":15,"estoque_disponivel_geral":91,"descricao":"Material Elétrico Tipo 85","categoria":"Transformadores","custo_unitario":1518.49,"lead_time_dias":45,"cmm_6m":22.67,"cobertura_meses":4.01,"valor_estoque_total":138182.59,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10085","regional":"Caxias do Sul","estoque_livre_total":66,"estoque_transito_total":14,"saldo_auxiliar":11,"estoque_disponivel_geral":80,"descricao":"Material Elétrico Tipo 86","categoria":"Transformadores","custo_unitario":2507.57,"lead_time_dias":90,"cmm_6m":79.67,"cobertura_meses":1.0,"valor_estoque_total":200605.6,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10086","regional":"Santa Maria","estoque_livre_total":69,"estoque_transito_total":3,"saldo_auxiliar":23,"estoque_disponivel_geral":72,"descricao":"Material Elétrico Tipo 87","categoria":"Transformadores","custo_unitario":2594.56,"lead_time_dias":60,"cmm_6m":33.5,"cobertura_meses":2.15,"valor_estoque_total":186808.32,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10087","regional":"Ribeirão Preto","estoque_livre_total":62,"estoque_transito_total":30,"saldo_auxiliar":36,"estoque_disponivel_geral":92,"descricao":"Material Elétrico Tipo 88","categoria":"Transformadores","custo_unitario":4412.38,"lead_time_dias":90,"cmm_6m":62.5,"cobertura_meses":1.47,"valor_estoque_total":405938.96,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10088","regional":"Caxias do Sul","estoque_livre_total":49,"estoque_transito_total":25,"saldo_auxiliar":14,"estoque_disponivel_geral":74,"descricao":"Material Elétrico Tipo 89","categoria":"Postes","custo_unitario":380.67,"lead_time_dias":15,"cmm_6m":28.5,"cobertura_meses":2.6,"valor_estoque_total":28169.58,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10089","regional":"Caxias do Sul","estoque_livre_total":22,"estoque_transito_total":9,"saldo_auxiliar":12,"estoque_disponivel_geral":31,"descricao":"Material Elétrico Tipo 90","categoria":"Chaves Seccionadoras","custo_unitario":1406.88,"lead_time_dias":90,"cmm_6m":31.17,"cobertura_meses":0.99,"valor_estoque_total":43613.28,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10090","regional":"Ribeirão Preto","estoque_livre_total":68,"estoque_transito_total":42,"saldo_auxiliar":23,"estoque_disponivel_geral":110,"descricao":"Material Elétrico Tipo 91","categoria":"Chaves Seccionadoras","custo_unitario":895.51,"lead_time_dias":90,"cmm_6m":69.5,"cobertura_meses":1.58,"valor_estoque_total":98506.1,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10091","regional":"Ribeirão Preto","estoque_livre_total":109,"estoque_transito_total":32,"saldo_auxiliar":21,"estoque_disponivel_geral":141,"descricao":"Material Elétrico Tipo 92","categoria":"Transformadores","custo_unitario":1241.06,"lead_time_dias":30,"cmm_6m":28.83,"cobertura_meses":4.89,"valor_estoque_total":174989.46,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10092","regional":"Caxias do Sul","estoque_livre_total":56,"estoque_transito_total":11,"saldo_auxiliar":14,"estoque_disponivel_geral":67,"descricao":"Material Elétrico Tipo 93","categoria":"Chaves Seccionadoras","custo_unitario":2206.92,"lead_time_dias":30,"cmm_6m":20.5,"cobertura_meses":3.27,"valor_estoque_total":147863.64,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10093","regional":"Caxias do Sul","estoque_livre_total":15,"estoque_transito_total":55,"saldo_auxiliar":11,"estoque_disponivel_geral":70,"descricao":"Material Elétrico Tipo 94","categoria":"Chaves Seccionadoras","custo_unitario":1705.32,"lead_time_dias":30,"cmm_6m":76.67,"cobertura_meses":0.91,"valor_estoque_total":119372.4,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10094","regional":"Ribeirão Preto","estoque_livre_total":141,"estoque_transito_total":27,"saldo_auxiliar":29,"estoque_disponivel_geral":168,"descricao":"Material Elétrico Tipo 95","categoria":"Transformadores","custo_unitario":1803.35,"lead_time_dias":90,"cmm_6m":83.5,"cobertura_meses":2.01,"valor_estoque_total":302962.8,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10095","regional":"Santos","estoque_livre_total":43,"estoque_transito_total":13,"saldo_auxiliar":15,"estoque_disponivel_geral":56,"descricao":"Material Elétrico Tipo 96","categoria":"Chaves Seccionadoras","custo_unitario":3805.97,"lead_time_dias":45,"cmm_6m":11.0,"cobertura_meses":5.09,"valor_estoque_total":213134.32,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10096","regional":"Santos","estoque_livre_total":39,"estoque_transito_total":0,"saldo_auxiliar":17,"estoque_disponivel_geral":39,"descricao":"Material Elétrico Tipo 97","categoria":"Medidores","custo_unitario":4188.22,"lead_time_dias":90,"cmm_6m":60.67,"cobertura_meses":0.64,"valor_estoque_total":163340.58,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10097","regional":"Santa Maria","estoque_livre_total":113,"estoque_transito_total":45,"saldo_auxiliar":24,"estoque_disponivel_geral":158,"descricao":"Material Elétrico Tipo 98","categoria":"Cabos Isolados","custo_unitario":358.7,"lead_time_dias":45,"cmm_6m":57.33,"cobertura_meses":2.76,"valor_estoque_total":56674.6,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10098","regional":"Campinas","estoque_livre_total":40,"estoque_transito_total":53,"saldo_auxiliar":40,"estoque_disponivel_geral":93,"descricao":"Material Elétrico Tipo 99","categoria":"Cabos Isolados","custo_unitario":975.73,"lead_time_dias":45,"cmm_6m":74.0,"cobertura_meses":1.26,"valor_estoque_total":90742.89,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10099","regional":"Santa Maria","estoque_livre_total":74,"estoque_transito_total":8,"saldo_auxiliar":28,"estoque_disponivel_geral":82,"descricao":"Material Elétrico Tipo 100","categoria":"Transformadores","custo_unitario":3034.94,"lead_time_dias":30,"cmm_6m":52.5,"cobertura_meses":1.56,"valor_estoque_total":248865.08,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10100","regional":"Ribeirão Preto","estoque_livre_total":79,"estoque_transito_total":56,"saldo_auxiliar":28,"estoque_disponivel_geral":135,"descricao":"Material Elétrico Tipo 101","categoria":"Postes","custo_unitario":1642.77,"lead_time_dias":60,"cmm_6m":37.17,"cobertura_meses":3.63,"valor_estoque_total":221773.95,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10101","regional":"Santos","estoque_livre_total":96,"estoque_transito_total":51,"saldo_auxiliar":34,"estoque_disponivel_geral":147,"descricao":"Material Elétrico Tipo 102","categoria":"Transformadores","custo_unitario":1177.3,"lead_time_dias":15,"cmm_6m":26.33,"cobertura_meses":5.58,"valor_estoque_total":173063.1,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10102","regional":"Ribeirão Preto","estoque_livre_total":23,"estoque_transito_total":17,"saldo_auxiliar":17,"estoque_disponivel_geral":40,"descricao":"Material Elétrico Tipo 103","categoria":"Postes","custo_unitario":1360.52,"lead_time_dias":30,"cmm_6m":33.67,"cobertura_meses":1.19,"valor_estoque_total":54420.8,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10103","regional":"Santos","estoque_livre_total":97,"estoque_transito_total":43,"saldo_auxiliar":39,"estoque_disponivel_geral":140,"descricao":"Material Elétrico Tipo 104","categoria":"Cabos Isolados","custo_unitario":1481.96,"lead_time_dias":30,"cmm_6m":37.5,"cobertura_meses":3.73,"valor_estoque_total":207474.4,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10104","regional":"Campinas","estoque_livre_total":95,"estoque_transito_total":51,"saldo_auxiliar":25,"estoque_disponivel_geral":146,"descricao":"Material Elétrico Tipo 105","categoria":"Transformadores","custo_unitario":3825.82,"lead_time_dias":60,"cmm_6m":32.67,"cobertura_meses":4.47,"valor_estoque_total":558569.72,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10105","regional":"Campinas","estoque_livre_total":79,"estoque_transito_total":28,"saldo_auxiliar":31,"estoque_disponivel_geral":107,"descricao":"Material Elétrico Tipo 106","categoria":"Medidores","custo_unitario":653.65,"lead_time_dias":15,"cmm_6m":73.0,"cobertura_meses":1.47,"valor_estoque_total":69940.55,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10106","regional":"Ribeirão Preto","estoque_livre_total":63,"estoque_transito_total":49,"saldo_auxiliar":36,"estoque_disponivel_geral":112,"descricao":"Material Elétrico Tipo 107","categoria":"Chaves Seccionadoras","custo_unitario":3203.2,"lead_time_dias":90,"cmm_6m":11.67,"cobertura_meses":9.6,"valor_estoque_total":358758.4,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10107","regional":"Campinas","estoque_livre_total":118,"estoque_transito_total":40,"saldo_auxiliar":35,"estoque_disponivel_geral":158,"descricao":"Material Elétrico Tipo 108","categoria":"Postes","custo_unitario":2507.81,"lead_time_dias":90,"cmm_6m":64.33,"cobertura_meses":2.46,"valor_estoque_total":396233.98,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10108","regional":"Caxias do Sul","estoque_livre_total":84,"estoque_transito_total":39,"saldo_auxiliar":22,"estoque_disponivel_geral":123,"descricao":"Material Elétrico Tipo 109","categoria":"Chaves Seccionadoras","custo_unitario":1365.95,"lead_time_dias":30,"cmm_6m":60.33,"cobertura_meses":2.04,"valor_estoque_total":168011.85,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10109","regional":"Campinas","estoque_livre_total":135,"estoque_transito_total":12,"saldo_auxiliar":40,"estoque_disponivel_geral":147,"descricao":"Material Elétrico Tipo 110","categoria":"Chaves Seccionadoras","custo_unitario":1915.12,"lead_time_dias":15,"cmm_6m":58.33,"cobertura_meses":2.52,"valor_estoque_total":281522.64,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10110","regional":"Santos","estoque_livre_total":83,"estoque_transito_total":18,"saldo_auxiliar":28,"estoque_disponivel_geral":101,"descricao":"Material Elétrico Tipo 111","categoria":"Transformadores","custo_unitario":1186.4,"lead_time_dias":30,"cmm_6m":66.83,"cobertura_meses":1.51,"valor_estoque_total":119826.4,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10111","regional":"Santa Maria","estoque_livre_total":54,"estoque_transito_total":15,"saldo_auxiliar":25,"estoque_disponivel_geral":69,"descricao":"Material Elétrico Tipo 112","categoria":"Chaves Seccionadoras","custo_unitario":2769.29,"lead_time_dias":45,"cmm_6m":70.0,"cobertura_meses":0.99,"valor_estoque_total":191081.01,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10112","regional":"Ribeirão Preto","estoque_livre_total":32,"estoque_transito_total":13,"saldo_auxiliar":32,"estoque_disponivel_geral":45,"descricao":"Material Elétrico Tipo 113","categoria":"Medidores","custo_unitario":408.5,"lead_time_dias":30,"cmm_6m":31.83,"cobertura_meses":1.41,"valor_estoque_total":18382.5,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10113","regional":"Ribeirão Preto","estoque_livre_total":98,"estoque_transito_total":53,"saldo_auxiliar":33,"estoque_disponivel_geral":151,"descricao":"Material Elétrico Tipo 114","categoria":"Chaves Seccionadoras","custo_unitario":68.1,"lead_time_dias":30,"cmm_6m":58.5,"cobertura_meses":2.58,"valor_estoque_total":10283.1,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10114","regional":"Santos","estoque_livre_total":69,"estoque_transito_total":3,"saldo_auxiliar":7,"estoque_disponivel_geral":72,"descricao":"Material Elétrico Tipo 115","categoria":"Transformadores","custo_unitario":2842.27,"lead_time_dias":90,"cmm_6m":61.67,"cobertura_meses":1.17,"valor_estoque_total":204643.44,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10115","regional":"Santa Maria","estoque_livre_total":65,"estoque_transito_total":38,"saldo_auxiliar":11,"estoque_disponivel_geral":103,"descricao":"Material Elétrico Tipo 116","categoria":"Medidores","custo_unitario":910.49,"lead_time_dias":90,"cmm_6m":71.83,"cobertura_meses":1.43,"valor_estoque_total":93780.47,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10116","regional":"Ribeirão Preto","estoque_livre_total":83,"estoque_transito_total":45,"saldo_auxiliar":1,"estoque_disponivel_geral":128,"descricao":"Material Elétrico Tipo 117","categoria":"Cabos Isolados","custo_unitario":361.04,"lead_time_dias":90,"cmm_6m":44.0,"cobertura_meses":2.91,"valor_estoque_total":46213.12,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10117","regional":"Caxias do Sul","estoque_livre_total":44,"estoque_transito_total":49,"saldo_auxiliar":13,"estoque_disponivel_geral":93,"descricao":"Material Elétrico Tipo 118","categoria":"Chaves Seccionadoras","custo_unitario":1812.67,"lead_time_dias":45,"cmm_6m":30.0,"cobertura_meses":3.1,"valor_estoque_total":168578.31,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10118","regional":"Campinas","estoque_livre_total":81,"estoque_transito_total":54,"saldo_auxiliar":25,"estoque_disponivel_geral":135,"descricao":"Material Elétrico Tipo 119","categoria":"Transformadores","custo_unitario":271.17,"lead_time_dias":90,"cmm_6m":21.67,"cobertura_meses":6.23,"valor_estoque_total":36607.95,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10119","regional":"Santos","estoque_livre_total":109,"estoque_transito_total":53,"saldo_auxiliar":38,"estoque_disponivel_geral":162,"descricao":"Material Elétrico Tipo 120","categoria":"Cabos Isolados","custo_unitario":3994.88,"lead_time_dias":15,"cmm_6m":16.0,"cobertura_meses":10.12,"valor_estoque_total":647170.5600000001,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10120","regional":"Santa Maria","estoque_livre_total":80,"estoque_transito_total":50,"saldo_auxiliar":14,"estoque_disponivel_geral":130,"descricao":"Material Elétrico Tipo 121","categoria":"Cabos Isolados","custo_unitario":168.03,"lead_time_dias":60,"cmm_6m":60.17,"cobertura_meses":2.16,"valor_estoque_total":21843.9,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10121","regional":"Ribeirão Preto","estoque_livre_total":70,"estoque_transito_total":31,"saldo_auxiliar":36,"estoque_disponivel_geral":101,"descricao":"Material Elétrico Tipo 122","categoria":"Postes","custo_unitario":2623.84,"lead_time_dias":15,"cmm_6m":30.0,"cobertura_meses":3.37,"valor_estoque_total":265007.84,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10122","regional":"Santos","estoque_livre_total":38,"estoque_transito_total":3,"saldo_auxiliar":23,"estoque_disponivel_geral":41,"descricao":"Material Elétrico Tipo 123","categoria":"Medidores","custo_unitario":1998.4,"lead_time_dias":15,"cmm_6m":52.0,"cobertura_meses":0.79,"valor_estoque_total":81934.4,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10123","regional":"Santa Maria","estoque_livre_total":50,"estoque_transito_total":30,"saldo_auxiliar":37,"estoque_disponivel_geral":80,"descricao":"Material Elétrico Tipo 124","categoria":"Chaves Seccionadoras","custo_unitario":3038.88,"lead_time_dias":90,"cmm_6m":16.67,"cobertura_meses":4.8,"valor_estoque_total":243110.4,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10124","regional":"Ribeirão Preto","estoque_livre_total":12,"estoque_transito_total":9,"saldo_auxiliar":6,"estoque_disponivel_geral":21,"descricao":"Material Elétrico Tipo 125","categoria":"Transformadores","custo_unitario":1506.92,"lead_time_dias":60,"cmm_6m":47.67,"cobertura_meses":0.44,"valor_estoque_total":31645.32,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10125","regional":"Santa Maria","estoque_livre_total":39,"estoque_transito_total":47,"saldo_auxiliar":21,"estoque_disponivel_geral":86,"descricao":"Material Elétrico Tipo 126","categoria":"Postes","custo_unitario":735.71,"lead_time_dias":60,"cmm_6m":37.83,"cobertura_meses":2.27,"valor_estoque_total":63271.06,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10126","regional":"Santa Maria","estoque_livre_total":60,"estoque_transito_total":17,"saldo_auxiliar":1,"estoque_disponivel_geral":77,"descricao":"Material Elétrico Tipo 127","categoria":"Medidores","custo_unitario":4419.1,"lead_time_dias":60,"cmm_6m":65.67,"cobertura_meses":1.17,"valor_estoque_total":340270.7,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10127","regional":"Santa Maria","estoque_livre_total":29,"estoque_transito_total":10,"saldo_auxiliar":10,"estoque_disponivel_geral":39,"descricao":"Material Elétrico Tipo 128","categoria":"Postes","custo_unitario":3782.45,"lead_time_dias":45,"cmm_6m":33.17,"cobertura_meses":1.18,"valor_estoque_total":147515.55,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10128","regional":"Santos","estoque_livre_total":116,"estoque_transito_total":54,"saldo_auxiliar":30,"estoque_disponivel_geral":170,"descricao":"Material Elétrico Tipo 129","categoria":"Medidores","custo_unitario":3878.1,"lead_time_dias":90,"cmm_6m":63.67,"cobertura_meses":2.67,"valor_estoque_total":659277.0,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10129","regional":"Santa Maria","estoque_livre_total":45,"estoque_transito_total":37,"saldo_auxiliar":9,"estoque_disponivel_geral":82,"descricao":"Material Elétrico Tipo 130","categoria":"Medidores","custo_unitario":1159.87,"lead_time_dias":60,"cmm_6m":74.0,"cobertura_meses":1.11,"valor_estoque_total":95109.34,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10130","regional":"Santa Maria","estoque_livre_total":83,"estoque_transito_total":34,"saldo_auxiliar":40,"estoque_disponivel_geral":117,"descricao":"Material Elétrico Tipo 131","categoria":"Chaves Seccionadoras","custo_unitario":218.01,"lead_time_dias":45,"cmm_6m":78.5,"cobertura_meses":1.49,"valor_estoque_total":25507.17,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10131","regional":"Caxias do Sul","estoque_livre_total":55,"estoque_transito_total":16,"saldo_auxiliar":32,"estoque_disponivel_geral":71,"descricao":"Material Elétrico Tipo 132","categoria":"Medidores","custo_unitario":1396.05,"lead_time_dias":30,"cmm_6m":51.0,"cobertura_meses":1.39,"valor_estoque_total":99119.55,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10132","regional":"Santos","estoque_livre_total":142,"estoque_transito_total":22,"saldo_auxiliar":33,"estoque_disponivel_geral":164,"descricao":"Material Elétrico Tipo 133","categoria":"Postes","custo_unitario":2437.7,"lead_time_dias":30,"cmm_6m":10.33,"cobertura_meses":15.88,"valor_estoque_total":399782.8,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10133","regional":"Santos","estoque_livre_total":95,"estoque_transito_total":13,"saldo_auxiliar":15,"estoque_disponivel_geral":108,"descricao":"Material Elétrico Tipo 134","categoria":"Medidores","custo_unitario":1500.23,"lead_time_dias":45,"cmm_6m":78.33,"cobertura_meses":1.38,"valor_estoque_total":162024.84,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10134","regional":"Ribeirão Preto","estoque_livre_total":122,"estoque_transito_total":24,"saldo_auxiliar":14,"estoque_disponivel_geral":146,"descricao":"Material Elétrico Tipo 135","categoria":"Chaves Seccionadoras","custo_unitario":3733.16,"lead_time_dias":45,"cmm_6m":89.0,"cobertura_meses":1.64,"valor_estoque_total":545041.36,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10135","regional":"Santos","estoque_livre_total":122,"estoque_transito_total":3,"saldo_auxiliar":13,"estoque_disponivel_geral":125,"descricao":"Material Elétrico Tipo 136","categoria":"Chaves Seccionadoras","custo_unitario":1254.72,"lead_time_dias":90,"cmm_6m":23.33,"cobertura_meses":5.36,"valor_estoque_total":156840.0,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10136","regional":"Santa Maria","estoque_livre_total":111,"estoque_transito_total":5,"saldo_auxiliar":37,"estoque_disponivel_geral":116,"descricao":"Material Elétrico Tipo 137","categoria":"Postes","custo_unitario":4345.2,"lead_time_dias":90,"cmm_6m":33.67,"cobertura_meses":3.45,"valor_estoque_total":504043.2,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10137","regional":"Ribeirão Preto","estoque_livre_total":105,"estoque_transito_total":40,"saldo_auxiliar":6,"estoque_disponivel_geral":145,"descricao":"Material Elétrico Tipo 138","categoria":"Cabos Isolados","custo_unitario":2082.12,"lead_time_dias":30,"cmm_6m":63.0,"cobertura_meses":2.3,"valor_estoque_total":301907.4,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10138","regional":"Campinas","estoque_livre_total":52,"estoque_transito_total":24,"saldo_auxiliar":16,"estoque_disponivel_geral":76,"descricao":"Material Elétrico Tipo 139","categoria":"Cabos Isolados","custo_unitario":3796.21,"lead_time_dias":60,"cmm_6m":46.67,"cobertura_meses":1.63,"valor_estoque_total":288511.96,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10139","regional":"Santa Maria","estoque_livre_total":149,"estoque_transito_total":21,"saldo_auxiliar":44,"estoque_disponivel_geral":170,"descricao":"Material Elétrico Tipo 140","categoria":"Medidores","custo_unitario":910.96,"lead_time_dias":30,"cmm_6m":45.83,"cobertura_meses":3.71,"valor_estoque_total":154863.2,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10140","regional":"Santos","estoque_livre_total":62,"estoque_transito_total":33,"saldo_auxiliar":23,"estoque_disponivel_geral":95,"descricao":"Material Elétrico Tipo 141","categoria":"Transformadores","custo_unitario":1877.58,"lead_time_dias":60,"cmm_6m":29.0,"cobertura_meses":3.28,"valor_estoque_total":178370.1,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10141","regional":"Campinas","estoque_livre_total":73,"estoque_transito_total":6,"saldo_auxiliar":21,"estoque_disponivel_geral":79,"descricao":"Material Elétrico Tipo 142","categoria":"Medidores","custo_unitario":3161.33,"lead_time_dias":60,"cmm_6m":84.17,"cobertura_meses":0.94,"valor_estoque_total":249745.07,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10142","regional":"Campinas","estoque_livre_total":39,"estoque_transito_total":20,"saldo_auxiliar":14,"estoque_disponivel_geral":59,"descricao":"Material Elétrico Tipo 143","categoria":"Postes","custo_unitario":661.36,"lead_time_dias":90,"cmm_6m":58.33,"cobertura_meses":1.01,"valor_estoque_total":39020.24,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10143","regional":"Caxias do Sul","estoque_livre_total":71,"estoque_transito_total":42,"saldo_auxiliar":18,"estoque_disponivel_geral":113,"descricao":"Material Elétrico Tipo 144","categoria":"Postes","custo_unitario":636.38,"lead_time_dias":15,"cmm_6m":44.33,"cobertura_meses":2.55,"valor_estoque_total":71910.94,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10144","regional":"Santa Maria","estoque_livre_total":65,"estoque_transito_total":50,"saldo_auxiliar":30,"estoque_disponivel_geral":115,"descricao":"Material Elétrico Tipo 145","categoria":"Postes","custo_unitario":4364.29,"lead_time_dias":15,"cmm_6m":30.67,"cobertura_meses":3.75,"valor_estoque_total":501893.35,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10145","regional":"Santos","estoque_livre_total":48,"estoque_transito_total":48,"saldo_auxiliar":13,"estoque_disponivel_geral":96,"descricao":"Material Elétrico Tipo 146","categoria":"Postes","custo_unitario":3228.52,"lead_time_dias":45,"cmm_6m":25.67,"cobertura_meses":3.74,"valor_estoque_total":309937.92,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10146","regional":"Santos","estoque_livre_total":89,"estoque_transito_total":33,"saldo_auxiliar":36,"estoque_disponivel_geral":122,"descricao":"Material Elétrico Tipo 147","categoria":"Postes","custo_unitario":227.96,"lead_time_dias":90,"cmm_6m":82.17,"cobertura_meses":1.48,"valor_estoque_total":27811.12,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10147","regional":"Santa Maria","estoque_livre_total":72,"estoque_transito_total":32,"saldo_auxiliar":17,"estoque_disponivel_geral":104,"descricao":"Material Elétrico Tipo 148","categoria":"Chaves Seccionadoras","custo_unitario":1821.75,"lead_time_dias":60,"cmm_6m":23.0,"cobertura_meses":4.52,"valor_estoque_total":189462.0,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10148","regional":"Caxias do Sul","estoque_livre_total":111,"estoque_transito_total":34,"saldo_auxiliar":29,"estoque_disponivel_geral":145,"descricao":"Material Elétrico Tipo 149","categoria":"Cabos Isolados","custo_unitario":1976.33,"lead_time_dias":15,"cmm_6m":34.0,"cobertura_meses":4.26,"valor_estoque_total":286567.85,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10149","regional":"Campinas","estoque_livre_total":83,"estoque_transito_total":58,"saldo_auxiliar":22,"estoque_disponivel_geral":141,"descricao":"Material Elétrico Tipo 150","categoria":"Postes","custo_unitario":3359.71,"lead_time_dias":60,"cmm_6m":31.5,"cobertura_meses":4.48,"valor_estoque_total":473719.11,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10150","regional":"Ribeirão Preto","estoque_livre_total":93,"estoque_transito_total":25,"saldo_auxiliar":21,"estoque_disponivel_geral":118,"descricao":"Material Elétrico Tipo 151","categoria":"Transformadores","custo_unitario":1162.58,"lead_time_dias":15,"cmm_6m":15.83,"cobertura_meses":7.45,"valor_estoque_total":137184.44,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10151","regional":"Campinas","estoque_livre_total":88,"estoque_transito_total":39,"saldo_auxiliar":16,"estoque_disponivel_geral":127,"descricao":"Material Elétrico Tipo 152","categoria":"Transformadores","custo_unitario":866.21,"lead_time_dias":15,"cmm_6m":33.5,"cobertura_meses":3.79,"valor_estoque_total":110008.67,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10152","regional":"Campinas","estoque_livre_total":76,"estoque_transito_total":42,"saldo_auxiliar":16,"estoque_disponivel_geral":118,"descricao":"Material Elétrico Tipo 153","categoria":"Transformadores","custo_unitario":405.29,"lead_time_dias":15,"cmm_6m":55.33,"cobertura_meses":2.13,"valor_estoque_total":47824.22,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10153","regional":"Campinas","estoque_livre_total":57,"estoque_transito_total":34,"saldo_auxiliar":19,"estoque_disponivel_geral":91,"descricao":"Material Elétrico Tipo 154","categoria":"Transformadores","custo_unitario":1953.14,"lead_time_dias":90,"cmm_6m":33.17,"cobertura_meses":2.74,"valor_estoque_total":177735.74,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10154","regional":"Santa Maria","estoque_livre_total":130,"estoque_transito_total":43,"saldo_auxiliar":23,"estoque_disponivel_geral":173,"descricao":"Material Elétrico Tipo 155","categoria":"Chaves Seccionadoras","custo_unitario":3112.27,"lead_time_dias":30,"cmm_6m":80.0,"cobertura_meses":2.16,"valor_estoque_total":538422.71,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10155","regional":"Ribeirão Preto","estoque_livre_total":26,"estoque_transito_total":18,"saldo_auxiliar":15,"estoque_disponivel_geral":44,"descricao":"Material Elétrico Tipo 156","categoria":"Transformadores","custo_unitario":304.25,"lead_time_dias":60,"cmm_6m":71.17,"cobertura_meses":0.62,"valor_estoque_total":13387.0,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10156","regional":"Santos","estoque_livre_total":81,"estoque_transito_total":16,"saldo_auxiliar":33,"estoque_disponivel_geral":97,"descricao":"Material Elétrico Tipo 157","categoria":"Postes","custo_unitario":4122.28,"lead_time_dias":90,"cmm_6m":39.0,"cobertura_meses":2.49,"valor_estoque_total":399861.16,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10157","regional":"Campinas","estoque_livre_total":84,"estoque_transito_total":11,"saldo_auxiliar":38,"estoque_disponivel_geral":95,"descricao":"Material Elétrico Tipo 158","categoria":"Medidores","custo_unitario":2015.68,"lead_time_dias":90,"cmm_6m":26.5,"cobertura_meses":3.58,"valor_estoque_total":191489.6,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10158","regional":"Santos","estoque_livre_total":43,"estoque_transito_total":30,"saldo_auxiliar":36,"estoque_disponivel_geral":73,"descricao":"Material Elétrico Tipo 159","categoria":"Transformadores","custo_unitario":1113.25,"lead_time_dias":90,"cmm_6m":10.67,"cobertura_meses":6.84,"valor_estoque_total":81267.25,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10159","regional":"Santa Maria","estoque_livre_total":129,"estoque_transito_total":15,"saldo_auxiliar":12,"estoque_disponivel_geral":144,"descricao":"Material Elétrico Tipo 160","categoria":"Chaves Seccionadoras","custo_unitario":463.21,"lead_time_dias":90,"cmm_6m":37.83,"cobertura_meses":3.81,"valor_estoque_total":66702.24,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10160","regional":"Campinas","estoque_livre_total":106,"estoque_transito_total":24,"saldo_auxiliar":25,"estoque_disponivel_geral":130,"descricao":"Material Elétrico Tipo 161","categoria":"Chaves Seccionadoras","custo_unitario":859.67,"lead_time_dias":90,"cmm_6m":51.0,"cobertura_meses":2.55,"valor_estoque_total":111757.1,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10161","regional":"Santos","estoque_livre_total":51,"estoque_transito_total":40,"saldo_auxiliar":26,"estoque_disponivel_geral":91,"descricao":"Material Elétrico Tipo 162","categoria":"Transformadores","custo_unitario":4208.71,"lead_time_dias":45,"cmm_6m":41.33,"cobertura_meses":2.2,"valor_estoque_total":382992.61,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10162","regional":"Ribeirão Preto","estoque_livre_total":53,"estoque_transito_total":6,"saldo_auxiliar":38,"estoque_disponivel_geral":59,"descricao":"Material Elétrico Tipo 163","categoria":"Medidores","custo_unitario":2888.5,"lead_time_dias":60,"cmm_6m":35.33,"cobertura_meses":1.67,"valor_estoque_total":170421.5,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10163","regional":"Ribeirão Preto","estoque_livre_total":103,"estoque_transito_total":21,"saldo_auxiliar":19,"estoque_disponivel_geral":124,"descricao":"Material Elétrico Tipo 164","categoria":"Transformadores","custo_unitario":2346.88,"lead_time_dias":90,"cmm_6m":29.0,"cobertura_meses":4.28,"valor_estoque_total":291013.12,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10164","regional":"Santa Maria","estoque_livre_total":39,"estoque_transito_total":8,"saldo_auxiliar":33,"estoque_disponivel_geral":47,"descricao":"Material Elétrico Tipo 165","categoria":"Chaves Seccionadoras","custo_unitario":2972.43,"lead_time_dias":60,"cmm_6m":21.5,"cobertura_meses":2.19,"valor_estoque_total":139704.21,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10165","regional":"Ribeirão Preto","estoque_livre_total":94,"estoque_transito_total":22,"saldo_auxiliar":36,"estoque_disponivel_geral":116,"descricao":"Material Elétrico Tipo 166","categoria":"Cabos Isolados","custo_unitario":1985.92,"lead_time_dias":45,"cmm_6m":17.33,"cobertura_meses":6.69,"valor_estoque_total":230366.72,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10166","regional":"Santos","estoque_livre_total":32,"estoque_transito_total":58,"saldo_auxiliar":15,"estoque_disponivel_geral":90,"descricao":"Material Elétrico Tipo 167","categoria":"Postes","custo_unitario":3297.33,"lead_time_dias":45,"cmm_6m":65.5,"cobertura_meses":1.37,"valor_estoque_total":296759.7,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10167","regional":"Campinas","estoque_livre_total":38,"estoque_transito_total":30,"saldo_auxiliar":25,"estoque_disponivel_geral":68,"descricao":"Material Elétrico Tipo 168","categoria":"Chaves Seccionadoras","custo_unitario":257.58,"lead_time_dias":60,"cmm_6m":42.67,"cobertura_meses":1.59,"valor_estoque_total":17515.44,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10168","regional":"Caxias do Sul","estoque_livre_total":62,"estoque_transito_total":44,"saldo_auxiliar":3,"estoque_disponivel_geral":106,"descricao":"Material Elétrico Tipo 169","categoria":"Transformadores","custo_unitario":2566.7,"lead_time_dias":15,"cmm_6m":53.83,"cobertura_meses":1.97,"valor_estoque_total":272070.2,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10169","regional":"Santa Maria","estoque_livre_total":86,"estoque_transito_total":39,"saldo_auxiliar":44,"estoque_disponivel_geral":125,"descricao":"Material Elétrico Tipo 170","categoria":"Postes","custo_unitario":751.77,"lead_time_dias":30,"cmm_6m":41.67,"cobertura_meses":3.0,"valor_estoque_total":93971.25,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10170","regional":"Caxias do Sul","estoque_livre_total":77,"estoque_transito_total":14,"saldo_auxiliar":39,"estoque_disponivel_geral":91,"descricao":"Material Elétrico Tipo 171","categoria":"Transformadores","custo_unitario":580.33,"lead_time_dias":15,"cmm_6m":45.67,"cobertura_meses":1.99,"valor_estoque_total":52810.03,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10171","regional":"Caxias do Sul","estoque_livre_total":128,"estoque_transito_total":21,"saldo_auxiliar":36,"estoque_disponivel_geral":149,"descricao":"Material Elétrico Tipo 172","categoria":"Transformadores","custo_unitario":1568.07,"lead_time_dias":15,"cmm_6m":26.83,"cobertura_meses":5.55,"valor_estoque_total":233642.43,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10172","regional":"Ribeirão Preto","estoque_livre_total":53,"estoque_transito_total":15,"saldo_auxiliar":21,"estoque_disponivel_geral":68,"descricao":"Material Elétrico Tipo 173","categoria":"Cabos Isolados","custo_unitario":453.96,"lead_time_dias":15,"cmm_6m":20.17,"cobertura_meses":3.37,"valor_estoque_total":30869.28,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10173","regional":"Caxias do Sul","estoque_livre_total":76,"estoque_transito_total":54,"saldo_auxiliar":11,"estoque_disponivel_geral":130,"descricao":"Material Elétrico Tipo 174","categoria":"Postes","custo_unitario":464.47,"lead_time_dias":90,"cmm_6m":75.0,"cobertura_meses":1.73,"valor_estoque_total":60381.1,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10174","regional":"Ribeirão Preto","estoque_livre_total":63,"estoque_transito_total":58,"saldo_auxiliar":34,"estoque_disponivel_geral":121,"descricao":"Material Elétrico Tipo 175","categoria":"Postes","custo_unitario":1432.35,"lead_time_dias":45,"cmm_6m":44.17,"cobertura_meses":2.74,"valor_estoque_total":173314.35,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10175","regional":"Santa Maria","estoque_livre_total":25,"estoque_transito_total":31,"saldo_auxiliar":8,"estoque_disponivel_geral":56,"descricao":"Material Elétrico Tipo 176","categoria":"Cabos Isolados","custo_unitario":4408.72,"lead_time_dias":15,"cmm_6m":47.17,"cobertura_meses":1.19,"valor_estoque_total":246888.32,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10176","regional":"Caxias do Sul","estoque_livre_total":59,"estoque_transito_total":48,"saldo_auxiliar":31,"estoque_disponivel_geral":107,"descricao":"Material Elétrico Tipo 177","categoria":"Chaves Seccionadoras","custo_unitario":826.1,"lead_time_dias":45,"cmm_6m":76.67,"cobertura_meses":1.4,"valor_estoque_total":88392.7,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10177","regional":"Campinas","estoque_livre_total":40,"estoque_transito_total":55,"saldo_auxiliar":25,"estoque_disponivel_geral":95,"descricao":"Material Elétrico Tipo 178","categoria":"Transformadores","custo_unitario":121.45,"lead_time_dias":60,"cmm_6m":43.83,"cobertura_meses":2.17,"valor_estoque_total":11537.75,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10178","regional":"Campinas","estoque_livre_total":39,"estoque_transito_total":29,"saldo_auxiliar":30,"estoque_disponivel_geral":68,"descricao":"Material Elétrico Tipo 179","categoria":"Medidores","custo_unitario":3445.79,"lead_time_dias":30,"cmm_6m":42.33,"cobertura_meses":1.61,"valor_estoque_total":234313.72,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10179","regional":"Caxias do Sul","estoque_livre_total":22,"estoque_transito_total":0,"saldo_auxiliar":18,"estoque_disponivel_geral":22,"descricao":"Material Elétrico Tipo 180","categoria":"Transformadores","custo_unitario":3639.8,"lead_time_dias":60,"cmm_6m":22.83,"cobertura_meses":0.96,"valor_estoque_total":80075.6,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10180","regional":"Santa Maria","estoque_livre_total":33,"estoque_transito_total":55,"saldo_auxiliar":20,"estoque_disponivel_geral":88,"descricao":"Material Elétrico Tipo 181","categoria":"Transformadores","custo_unitario":1587.79,"lead_time_dias":60,"cmm_6m":48.67,"cobertura_meses":1.81,"valor_estoque_total":139725.52,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10181","regional":"Ribeirão Preto","estoque_livre_total":100,"estoque_transito_total":36,"saldo_auxiliar":39,"estoque_disponivel_geral":136,"descricao":"Material Elétrico Tipo 182","categoria":"Chaves Seccionadoras","custo_unitario":2115.12,"lead_time_dias":90,"cmm_6m":60.83,"cobertura_meses":2.24,"valor_estoque_total":287656.32,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10182","regional":"Campinas","estoque_livre_total":74,"estoque_transito_total":45,"saldo_auxiliar":22,"estoque_disponivel_geral":119,"descricao":"Material Elétrico Tipo 183","categoria":"Transformadores","custo_unitario":2939.74,"lead_time_dias":30,"cmm_6m":80.83,"cobertura_meses":1.47,"valor_estoque_total":349829.06,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10183","regional":"Campinas","estoque_livre_total":102,"estoque_transito_total":3,"saldo_auxiliar":15,"estoque_disponivel_geral":105,"descricao":"Material Elétrico Tipo 184","categoria":"Cabos Isolados","custo_unitario":259.1,"lead_time_dias":60,"cmm_6m":15.0,"cobertura_meses":7.0,"valor_estoque_total":27205.5,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10184","regional":"Santa Maria","estoque_livre_total":111,"estoque_transito_total":42,"saldo_auxiliar":11,"estoque_disponivel_geral":153,"descricao":"Material Elétrico Tipo 185","categoria":"Cabos Isolados","custo_unitario":4273.44,"lead_time_dias":60,"cmm_6m":27.67,"cobertura_meses":5.53,"valor_estoque_total":653836.3199999999,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10185","regional":"Santos","estoque_livre_total":86,"estoque_transito_total":12,"saldo_auxiliar":25,"estoque_disponivel_geral":98,"descricao":"Material Elétrico Tipo 186","categoria":"Postes","custo_unitario":3995.16,"lead_time_dias":30,"cmm_6m":15.5,"cobertura_meses":6.32,"valor_estoque_total":391525.68,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10186","regional":"Caxias do Sul","estoque_livre_total":29,"estoque_transito_total":58,"saldo_auxiliar":26,"estoque_disponivel_geral":87,"descricao":"Material Elétrico Tipo 187","categoria":"Medidores","custo_unitario":1207.28,"lead_time_dias":30,"cmm_6m":17.17,"cobertura_meses":5.07,"valor_estoque_total":105033.36,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10187","regional":"Santa Maria","estoque_livre_total":100,"estoque_transito_total":53,"saldo_auxiliar":38,"estoque_disponivel_geral":153,"descricao":"Material Elétrico Tipo 188","categoria":"Transformadores","custo_unitario":113.18,"lead_time_dias":60,"cmm_6m":18.33,"cobertura_meses":8.35,"valor_estoque_total":17316.54,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10188","regional":"Santa Maria","estoque_livre_total":120,"estoque_transito_total":9,"saldo_auxiliar":11,"estoque_disponivel_geral":129,"descricao":"Material Elétrico Tipo 189","categoria":"Transformadores","custo_unitario":4203.46,"lead_time_dias":30,"cmm_6m":64.17,"cobertura_meses":2.01,"valor_estoque_total":542246.34,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10189","regional":"Campinas","estoque_livre_total":107,"estoque_transito_total":40,"saldo_auxiliar":18,"estoque_disponivel_geral":147,"descricao":"Material Elétrico Tipo 190","categoria":"Chaves Seccionadoras","custo_unitario":2277.13,"lead_time_dias":60,"cmm_6m":42.83,"cobertura_meses":3.43,"valor_estoque_total":334738.11,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10190","regional":"Santa Maria","estoque_livre_total":40,"estoque_transito_total":53,"saldo_auxiliar":36,"estoque_disponivel_geral":93,"descricao":"Material Elétrico Tipo 191","categoria":"Cabos Isolados","custo_unitario":2447.93,"lead_time_dias":60,"cmm_6m":90.33,"cobertura_meses":1.03,"valor_estoque_total":227657.49,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10191","regional":"Campinas","estoque_livre_total":43,"estoque_transito_total":34,"saldo_auxiliar":35,"estoque_disponivel_geral":77,"descricao":"Material Elétrico Tipo 192","categoria":"Medidores","custo_unitario":3092.06,"lead_time_dias":90,"cmm_6m":43.33,"cobertura_meses":1.78,"valor_estoque_total":238088.62,"status_cobertura":"2. Atenção (< Meta 2M)"},{"sku_id":"MAT-10192","regional":"Santa Maria","estoque_livre_total":139,"estoque_transito_total":34,"saldo_auxiliar":34,"estoque_disponivel_geral":173,"descricao":"Material Elétrico Tipo 193","categoria":"Postes","custo_unitario":2788.62,"lead_time_dias":15,"cmm_6m":15.0,"cobertura_meses":11.53,"valor_estoque_total":482431.26,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10193","regional":"Campinas","estoque_livre_total":94,"estoque_transito_total":2,"saldo_auxiliar":7,"estoque_disponivel_geral":96,"descricao":"Material Elétrico Tipo 194","categoria":"Cabos Isolados","custo_unitario":4250.04,"lead_time_dias":60,"cmm_6m":29.5,"cobertura_meses":3.25,"valor_estoque_total":408003.84,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10194","regional":"Santa Maria","estoque_livre_total":151,"estoque_transito_total":46,"saldo_auxiliar":32,"estoque_disponivel_geral":197,"descricao":"Material Elétrico Tipo 195","categoria":"Postes","custo_unitario":4251.64,"lead_time_dias":45,"cmm_6m":33.83,"cobertura_meses":5.82,"valor_estoque_total":837573.08,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10195","regional":"Caxias do Sul","estoque_livre_total":24,"estoque_transito_total":36,"saldo_auxiliar":11,"estoque_disponivel_geral":60,"descricao":"Material Elétrico Tipo 196","categoria":"Chaves Seccionadoras","custo_unitario":3908.37,"lead_time_dias":15,"cmm_6m":22.5,"cobertura_meses":2.67,"valor_estoque_total":234502.2,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10196","regional":"Campinas","estoque_livre_total":65,"estoque_transito_total":2,"saldo_auxiliar":10,"estoque_disponivel_geral":67,"descricao":"Material Elétrico Tipo 197","categoria":"Chaves Seccionadoras","custo_unitario":2880.18,"lead_time_dias":15,"cmm_6m":16.5,"cobertura_meses":4.06,"valor_estoque_total":192972.06,"status_cobertura":"4. Excesso (> 3M)"},{"sku_id":"MAT-10197","regional":"Campinas","estoque_livre_total":114,"estoque_transito_total":11,"saldo_auxiliar":17,"estoque_disponivel_geral":125,"descricao":"Material Elétrico Tipo 198","categoria":"Transformadores","custo_unitario":3613.23,"lead_time_dias":15,"cmm_6m":50.67,"cobertura_meses":2.47,"valor_estoque_total":451653.75,"status_cobertura":"3. Saudável (Na Meta)"},{"sku_id":"MAT-10198","regional":"Campinas","estoque_livre_total":28,"estoque_transito_total":10,"saldo_auxiliar":24,"estoque_disponivel_geral":38,"descricao":"Material Elétrico Tipo 199","categoria":"Medidores","custo_unitario":3061.78,"lead_time_dias":90,"cmm_6m":60.0,"cobertura_meses":0.63,"valor_estoque_total":116347.64,"status_cobertura":"1. Crítico (Ruptura Iminente)"},{"sku_id":"MAT-10199","regional":"Caxias do Sul","estoque_livre_total":89,"estoque_transito_total":37,"saldo_auxiliar":11,"estoque_disponivel_geral":126,"descricao":"Material Elétrico Tipo 200","categoria":"Postes","custo_unitario":2599.35,"lead_time_dias":60,"cmm_6m":49.5,"cobertura_meses":2.55,"valor_estoque_total":327518.1,"status_cobertura":"3. Saudável (Na Meta)"}];
+    const mapData = [{"regional":"Campinas","valor_total":9664208.5999999996,"estoque_pecas":4788,"cobertura_media":2.7153333333,"itens_criticos":4,"total_skus":45,"lat":-22.9099,"lng":-47.0626,"uf":"SP"},{"regional":"Caxias do Sul","valor_total":6469792.5800000001,"estoque_pecas":2996,"cobertura_media":2.7138709677,"itens_criticos":3,"total_skus":31,"lat":-29.1678,"lng":-51.1794,"uf":"RS"},{"regional":"Ribeirão Preto","valor_total":10331497.1699999999,"estoque_pecas":4288,"cobertura_media":3.7186486486,"itens_criticos":2,"total_skus":37,"lat":-21.1704,"lng":-47.8103,"uf":"SP"},{"regional":"Santa Maria","valor_total":11312095.25,"estoque_pecas":4582,"cobertura_media":3.1437209302,"itens_criticos":3,"total_skus":43,"lat":-29.6842,"lng":-53.8069,"uf":"RS"},{"regional":"Santos","valor_total":12459613.3200000003,"estoque_pecas":4727,"cobertura_media":3.6031818182,"itens_criticos":4,"total_skus":44,"lat":-23.9608,"lng":-46.3336,"uf":"SP"}];
+    let chartStatus, chartCategoria, chartSimulador, mapInstance;
+
+    function formatBRL(v) {
+        return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+    }
+
+    function openTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+        if (tabId === 'mapa-tab') {
+            setTimeout(() => {
+                if (!mapInstance) initMap();
+                else mapInstance.invalidateSize();
+            }, 100);
+        }
+    }
+
+    // Inicializar Filtros e Select de SKUs
+    function initControls() {
+        const regionais = [...new Set(rawData.map(d => d.regional))].sort();
+        const categorias = [...new Set(rawData.map(d => d.categoria))].sort();
+
+        const selReg = document.getElementById('filtroRegional');
+        regionais.forEach(r => selReg.innerHTML += `<option value="${r}">${r}</option>`);
+
+        const selCat = document.getElementById('filtroCategoria');
+        categorias.forEach(c => selCat.innerHTML += `<option value="${c}">${c}</option>`);
+
+        const selSku = document.getElementById('simSku');
+        rawData.slice(0, 60).forEach((item, idx) => {
+            selSku.innerHTML += `<option value="${idx}">${item.sku_id} | ${item.categoria} (${item.regional})</option>`;
+        });
+    }
+
+    function atualizarGerencial() {
+        const reg = document.getElementById('filtroRegional').value;
+        const cat = document.getElementById('filtroCategoria').value;
+
+        const filtrado = rawData.filter(d =>
+            (reg === 'TODAS' || d.regional === reg) &&
+            (cat === 'TODAS' || d.categoria === cat)
+        );
+
+        const totalValor = filtrado.reduce((acc, d) => acc + d.valor_estoque_total, 0);
+        const cobMedia = filtrado.length ? (filtrado.reduce((acc, d) => acc + d.cobertura_meses, 0) / filtrado.length) : 0;
+        const criticos = filtrado.filter(d => d.status_cobertura.startsWith('1.')).length;
+        const excesso = filtrado.filter(d => d.status_cobertura.startsWith('4.')).length;
+
+        document.getElementById('kpiValor').innerText = formatBRL(totalValor);
+        document.getElementById('kpiCobertura').innerText = cobMedia.toFixed(2) + ' meses';
+        document.getElementById('kpiCriticos').innerText = criticos + ' SKUs';
+        document.getElementById('kpiExcesso').innerText = excesso + ' SKUs';
+
+        // Gráfico 1: Status
+        const statusLabels = ['1. Crítico (Ruptura Iminente)', '2. Atenção (< Meta 2M)', '3. Saudável (Na Meta)', '4. Excesso (> 3M)'];
+        const statusCounts = statusLabels.map(s => filtrado.filter(d => d.status_cobertura === s).length);
+
+        if (chartStatus) chartStatus.destroy();
+        chartStatus = new Chart(document.getElementById('chartStatus'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Crítico (<1M)', 'Atenção (1-2M)', 'Saudável (2-3M)', 'Excesso (>3M)'],
+                datasets: [{ data: statusCounts, backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6'], borderWidth: 0 }]
+            },
+            options: { plugins: { legend: { position: 'right', labels: { color: '#f8fafc' } } } }
+        });
+
+        // Gráfico 2: Valor por Categoria
+        const cats = [...new Set(filtrado.map(d => d.categoria))];
+        const catVals = cats.map(c => filtrado.filter(d => d.categoria === c).reduce((a, b) => a + b.valor_estoque_total, 0));
+
+        if (chartCategoria) chartCategoria.destroy();
+        chartCategoria = new Chart(document.getElementById('chartCategoria'), {
+            type: 'bar',
+            data: {
+                labels: cats,
+                datasets: [{ label: 'Valor em Estoque (R$)', data: catVals, backgroundColor: '#38bdf8', borderRadius: 6 }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                }
+            }
+        });
+
+        // Tabela Top 12 Críticos
+        const topCriticos = [...filtrado].sort((a, b) => a.cobertura_meses - b.cobertura_meses).slice(0, 12);
+        const tbody = document.getElementById('tabelaCriticos');
+        tbody.innerHTML = '';
+        topCriticos.forEach(item => {
+            let badgeClass = 'b-saudavel';
+            if (item.status_cobertura.startsWith('1.')) badgeClass = 'b-critico';
+            else if (item.status_cobertura.startsWith('2.')) badgeClass = 'b-atencao';
+            else if (item.status_cobertura.startsWith('4.')) badgeClass = 'b-excesso';
+
+            tbody.innerHTML += `<tr>
+                <td><strong>${item.sku_id}</strong></td>
+                <td>${item.categoria}</td>
+                <td>${item.regional}</td>
+                <td>${item.estoque_disponivel_geral} un</td>
+                <td>${item.cmm_6m} un/mês</td>
+                <td>${item.lead_time_dias} dias</td>
+                <td><strong>${item.cobertura_meses} m</strong></td>
+                <td><span class="badge ${badgeClass}">${item.status_cobertura}</span></td>
+            </tr>`;
+        });
+    }
+
+    // Aba 2: Mapa Interativo
+    function initMap() {
+        mapInstance = L.map('map').setView([-25.8, -49.5], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO'
+        }).addTo(mapInstance);
+
+        const tbodyMapa = document.getElementById('tabelaMapa');
+        tbodyMapa.innerHTML = '';
+
+        mapData.forEach(loc => {
+            const cor = loc.itens_criticos > 10 ? '#ef4444' : '#38bdf8';
+            L.circleMarker([loc.lat, loc.lng], {
+                radius: Math.max(12, Math.sqrt(loc.valor_total) / 75),
+                fillColor: cor,
+                color: '#ffffff',
+                weight: 1.5,
+                opacity: 1,
+                fillOpacity: 0.75
+            }).addTo(mapInstance).bindPopup(`
+                <div style="color:#0f172a; min-width:180px;">
+                    <strong>Regional ${loc.regional} (${loc.uf})</strong><br><hr style="margin:4px 0;">
+                    Capital Alocado: <b>${formatBRL(loc.valor_total)}</b><br>
+                    Volume Total: <b>${loc.estoque_pecas} un</b><br>
+                    Cobertura Média: <b>${loc.cobertura_media.toFixed(2)} meses</b><br>
+                    SKUs Críticos: <b style="color:#dc2626;">${loc.itens_criticos}</b>
+                </div>
+            `);
+
+            tbodyMapa.innerHTML += `<tr>
+                <td><strong>${loc.regional}</strong> (${loc.uf})</td>
+                <td>${formatBRL(loc.valor_total)}</td>
+                <td>${loc.cobertura_media.toFixed(2)} m</td>
+                <td style="color:var(--danger); font-weight:bold;">${loc.itens_criticos}</td>
+            </tr>`;
+        });
+    }
+
+    // Aba 3: Simulador Matemático
+    let custoAtualSku = 850;
+    function carregarSkuSimulador() {
+        const idx = document.getElementById('simSku').value;
+        const item = rawData[idx];
+        document.getElementById('simCmm').value = Math.round(item.cmm_6m);
+        document.getElementById('simEst').value = item.estoque_disponivel_geral;
+        document.getElementById('simLt').value = item.lead_time_dias;
+        custoAtualSku = item.custo_unitario;
+        rodarSimulacao();
+    }
+
+    function rodarSimulacao() {
+        const cmmBase = parseFloat(document.getElementById('simCmm').value) || 1;
+        const estAtual = parseFloat(document.getElementById('simEst').value) || 0;
+        const metaMeses = parseFloat(document.getElementById('simMeta').value);
+        const ltDias = parseFloat(document.getElementById('simLt').value);
+        const varPct = parseFloat(document.getElementById('simVar').value);
+        const zScore = parseFloat(document.getElementById('simZ').value);
+
+        document.getElementById('lblCmm').innerText = cmmBase;
+        document.getElementById('lblEst').innerText = estAtual;
+        document.getElementById('lblMeta').innerText = metaMeses.toFixed(1) + ' m';
+        document.getElementById('lblLt').innerText = ltDias + ' dias';
+        document.getElementById('lblVar').innerText = (varPct >= 0 ? '+' : '') + varPct + '%';
+
+        // Modelos Matemáticos de Engenharia de Produção / Supply Chain
+        const cmmProjetado = cmmBase * (1 + varPct / 100);
+        const desvioPadraoMensal = cmmProjetado * 0.22; // Coeficiente de variação empírico (22%)
+        const ltMeses = ltDias / 30.0;
+
+        // Estoque de Segurança: ES = Z * sigma_d * sqrt(LT)
+        const estoqueSeguranca = Math.ceil(zScore * desvioPadraoMensal * Math.sqrt(ltMeses));
+        // Ponto de Pedido: ROP = (Demanda * LT) + ES
+        const pontoPedido = Math.ceil((cmmProjetado * ltMeses) + estoqueSeguranca);
+        // Estoque Alvo: (Demanda * Meta_Cobertura) + ES
+        const estoqueAlvo = Math.ceil((cmmProjetado * metaMeses) + estoqueSeguranca);
+        // Necessidade Líquida de Compra
+        const necessidadeCompra = Math.max(0, estoqueAlvo - estAtual);
+
+        document.getElementById('resEs').innerText = estoqueSeguranca + ' un';
+        document.getElementById('resRop').innerText = pontoPedido + ' un';
+        document.getElementById('resCompra').innerText = necessidadeCompra + ' un';
+        document.getElementById('resCustoCompra').innerText = 'Investimento estimado: ' + formatBRL(necessidadeCompra * custoAtualSku);
+
+        // Projeção de Consumo sem Reabastecimento vs. Com Reabastecimento no Lead-Time
+        const mesesLabels = ['Atual', 'Mês 1', 'Mês 2', 'Mês 3', 'Mês 4', 'Mês 5', 'Mês 6'];
+        const serieSemCompra = [];
+        const serieComCompra = [];
+        const mesChegadaPedido = Math.max(1, Math.round(ltMeses));
+
+        for (let m = 0; m <= 6; m++) {
+            const saldoSem = Math.max(0, Math.round(estAtual - (cmmProjetado * m)));
+            serieSemCompra.push(saldoSem);
+
+            let saldoCom = estAtual - (cmmProjetado * m);
+            if (m >= mesChegadaPedido) saldoCom += necessidadeCompra;
+            serieComCompra.push(Math.max(0, Math.round(saldoCom)));
+        }
+
+        if (chartSimulador) chartSimulador.destroy();
+        chartSimulador = new Chart(document.getElementById('chartSimulador'), {
+            type: 'line',
+            data: {
+                labels: mesesLabels,
+                datasets: [
+                    {
+                        label: 'Saldo Sem Reposição (Inércia)',
+                        data: serieSemCompra,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Saldo Com Reposição no Lead-Time',
+                        data: serieComCompra,
+                        borderColor: '#10b981',
+                        tension: 0.3,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Ponto de Pedido (ROP)',
+                        data: Array(7).fill(pontoPedido),
+                        borderColor: '#f59e0b',
+                        borderDash: [6, 6],
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                },
+                plugins: { legend: { labels: { color: '#f8fafc' } } }
+            }
+        });
+
+        const autonomiaAtual = (estAtual / cmmProjetado).toFixed(2);
+        const statusGatilho = estAtual <= pontoPedido
+            ? '⚠️ <strong>GATILHO ACIONADO:</strong> O estoque atual já está igual ou abaixo do Ponto de Pedido (ROP). Emitir Requisição de Compra imediatamente.'
+            : '✅ <strong>POSIÇÃO CONTROLADA:</strong> O saldo atual cobre o consumo durante o lead-time sem atingir o Estoque de Segurança.';
+
+        document.getElementById('diagnosticoSim').innerHTML = `
+            <strong>Memória de Cálculo S&OP:</strong> Demanda Ajustada = <code>${cmmProjetado.toFixed(1)} un/mês</code> | Autonomia Real = <code>${autonomiaAtual} meses</code> | Estoque Alvo = <code>${estoqueAlvo} un</code>.<br>
+            ${statusGatilho}
+        `;
+    }
+
+    initControls();
+    atualizarGerencial();
+    carregarSkuSimulador();
+</script>
+</body>
+</html>
